@@ -333,7 +333,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
     </div>
     <div class="field"><label>Usuário</label><input id="l-user" type="text" placeholder="seu_usuario"></div>
-    <div class="field"><label>Senha</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Senha</label><input id="l-pass" type="password" placeholder="••••••••" ></div>
     <button class="btn-auth" onclick="doLogin()">ENTRAR</button>
     <div class="auth-error" id="l-error"></div>
     <div class="auth-link">Não tem conta? <span onclick="switchAuthTab('register')">Cadastrar</span></div>
@@ -512,11 +512,36 @@ function doRegister(){
   const finalRole=isSenior?'senior':role;
   const photo = document.getElementById('r-photo-img').src;
   const hasPhoto = photo && photo.startsWith('data:');
+  // Sênior aprovado automaticamente; todos os outros ficam PENDENTES até aprovação do Sênior
   const newStatus = finalRole==='senior'?'approved':'pending';
   db.users.push({nome,user,pass,role:finalRole,photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
-  ok.textContent=finalRole==='senior'?'✅ Conta Sênior criada! Faça seu login.':'✅ Cadastro realizado! Aguarde aprovação de um Sênior para acessar.';
+  // ── LIMPAR TODOS OS CAMPOS DO FORMULÁRIO APÓS CRIAR A CONTA ──
+  document.getElementById('r-nome').value='';
+  document.getElementById('r-user').value='';
+  document.getElementById('r-pass').value='';
+  document.getElementById('r-pass2').value='';
+  document.getElementById('r-role').value='op';
+  document.getElementById('r-is-senior').checked=false;
+  document.getElementById('r-special').value='';
+  document.getElementById('senior-special-field').style.display='none';
+  document.getElementById('senior-note').style.display='none';
+  // Reset foto de perfil
+  const photoImg=document.getElementById('r-photo-img');
+  if(photoImg){photoImg.src='';photoImg.style.display='none';}
+  const photoIcon=document.getElementById('r-photo-icon');
+  if(photoIcon)photoIcon.style.display='';
+  const photoName=document.getElementById('r-photo-name');
+  if(photoName){photoName.textContent='';photoName.style.display='none';}
+  const photoInput=document.getElementById('r-photo-input');
+  if(photoInput)photoInput.value='';
+  // Exibir mensagem de sucesso e redirecionar para login
+  if(finalRole==='senior'){
+    ok.textContent='✅ Conta Sênior criada com sucesso! Faça seu login.';
+  } else {
+    ok.textContent='✅ Cadastro realizado! Aguarde a aprovação de um Sênior para acessar o sistema.';
+  }
   ok.style.display='block';
-  setTimeout(()=>switchAuthTab('login'),1800);
+  setTimeout(()=>{ ok.style.display='none'; switchAuthTab('login'); }, 2400);
 }
 function doLogin(){
   const user=v('l-user'),pass=v('l-pass');
