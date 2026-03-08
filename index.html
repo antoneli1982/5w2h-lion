@@ -334,6 +334,10 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     </div>
     <div class="field"><label>Usuário</label><input id="l-user" type="text" placeholder="seu_usuario"></div>
     <div class="field"><label>Senha</label><input id="l-pass" type="password" placeholder="••••••••" ></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <input type="checkbox" id="l-remember" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+      <label for="l-remember" style="font-size:12px;color:var(--gray2);cursor:pointer;user-select:none">Lembrar usuário e senha</label>
+    </div>
     <button class="btn-auth" onclick="doLogin()">ENTRAR</button>
     <div class="auth-error" id="l-error"></div>
     <div class="auth-link">Não tem conta? <span onclick="switchAuthTab('register')">Cadastrar</span></div>
@@ -365,6 +369,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           <span id="pending-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;border-radius:99px;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif"></span>
         </button>
       </div>
+      <button onclick="openEditProfile()" style="width:100%;background:#1a1a1a;color:var(--gray2);border:1px solid #f5a80020;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px;font-family:Montserrat,sans-serif">✏️ Editar Perfil</button>
       <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
     </div>
   </aside>
@@ -546,11 +551,18 @@ function doRegister(){
 function doLogin(){
   const user=v('l-user'),pass=v('l-pass');
   const err=document.getElementById('l-error');
+  const rememberCb=document.getElementById('l-remember');
   err.style.display='none';
   const found=db.users.find(u=>u.user===user&&u.pass===pass);
   if(!found){showErr(err,'Usuário ou senha incorretos.');return;}
   if(found.status==='pending'){showErr(err,'⏳ Sua conta aguarda aprovação de um Sênior. Tente novamente mais tarde.');return;}
   if(found.status==='rejected'){showErr(err,'❌ Acesso negado. Conta reprovada. Entre em contato com um Sênior.');return;}
+  // Handle remember me
+  if(rememberCb&&rememberCb.checked){
+    localStorage.setItem('lion_remember',JSON.stringify({user,pass}));
+  } else {
+    localStorage.removeItem('lion_remember');
+  }
   session.user=found;
   session.dashSc=found.role==='fin'?'fin':'op';
   // update sidebar
@@ -572,7 +584,16 @@ function doLogin(){
   if(found.role==='senior')updatePendingBadge();
   showDashboard();
 }
-function doLogout(){session.user=null;showScreen('screen-login');document.getElementById('l-user').value='';document.getElementById('l-pass').value='';}
+function doLogout(){
+  session.user=null;
+  showScreen('screen-login');
+  // Only clear fields if not remembered
+  const saved=localStorage.getItem('lion_remember');
+  if(!saved){
+    document.getElementById('l-user').value='';
+    document.getElementById('l-pass').value='';
+  }
+}
 
 // ══════════════════════════════════════════
 // VISIBLE PROJECTS
@@ -1013,7 +1034,7 @@ function updatePendingBadge(){
 }
 
 function spShowTab(tab){
-  ['users','approved','projects'].forEach(t=>{
+  ['users','approved','projects','all'].forEach(t=>{
     document.getElementById('sp-panel-'+t).style.display=t===tab?'block':'none';
     const btn=document.getElementById('sp-tab-'+t);
     if(btn){btn.classList.toggle('active',t===tab);}
@@ -1021,6 +1042,7 @@ function spShowTab(tab){
   if(tab==='users')spRenderPending();
   if(tab==='approved')spRenderApproved();
   if(tab==='projects')spRenderProjects();
+  if(tab==='all')spRenderAll();
 }
 
 function spRenderPending(){
@@ -1120,7 +1142,6 @@ function toggleProjectAccess(pid, username){
   const p=db.projects.find(x=>x.id===pid);
   if(!p)return;
   if(p.allowedUsers==='all'){
-    // convert to array of all current approved users except this one
     const allApproved=db.users.filter(u=>u.status==='approved'&&u.role!=='senior'&&u.role===p.sc).map(u=>u.user);
     p.allowedUsers=allApproved.filter(u=>u!==username);
   } else if(p.allowedUsers==='none'||!p.allowedUsers){
@@ -1135,6 +1156,112 @@ function toggleProjectAccess(pid, username){
   spRenderProjects();
 }
 
+function spRenderAll(){
+  const el=document.getElementById('sp-all-list');
+  const all=db.users.filter(u=>u.role!=='senior');
+  if(!all.length){
+    el.innerHTML='<div style="text-align:center;padding:28px;color:var(--gray);font-size:12px">Nenhum colaborador cadastrado ainda.</div>';
+    return;
+  }
+  const statusColor={'approved':'#4ade80','pending':'var(--warn)','rejected':'var(--danger)'};
+  const statusLabel={'approved':'✅ Aprovado','pending':'⏳ Aguardando','rejected':'❌ Reprovado'};
+  el.innerHTML=`
+    <div style="font-size:11px;color:var(--gray);margin-bottom:12px;padding:0 4px">Total: <b style="color:#fff">${all.length}</b> colaborador(es)</div>
+    ${all.map(u=>`
+    <div style="background:var(--p3);border:1px solid #f5a80020;border-radius:10px;padding:14px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="width:42px;height:42px;border-radius:50%;background:#2a1f00;border:2px solid ${u.role==='op'?'var(--sky)':'var(--warn)'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:${u.role==='op'?'var(--sky)':'var(--warn)'};flex-shrink:0;overflow:hidden">
+        ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.nome.charAt(0).toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:#fff">${u.nome}</div>
+        <div style="font-size:10px;color:var(--gray);margin-top:2px">@${u.user} · ${u.role==='op'?'🔵 Operacional':'💰 Financeiro'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:${statusColor[u.status]||'var(--gray)'}">${statusLabel[u.status]||u.status}</div>
+      </div>
+    </div>`).join('')}`;
+}
+
+// ══════════════════════════════════════════
+// PROFILE EDIT
+// ══════════════════════════════════════════
+function openEditProfile(){
+  const u=db.users.find(x=>x.user===currentUser);
+  if(!u)return;
+  document.getElementById('ep-nome').value=u.nome;
+  document.getElementById('ep-user').value=u.user;
+  document.getElementById('ep-pass').value='';
+  document.getElementById('ep-pass2').value='';
+  const photoWrap=document.getElementById('ep-photo-wrap');
+  const photoImg=document.getElementById('ep-photo-img');
+  const photoInitial=document.getElementById('ep-photo-initial');
+  if(u.photo){
+    photoImg.src=u.photo;
+    photoImg.style.display='block';
+    photoInitial.style.display='none';
+  } else {
+    photoImg.style.display='none';
+    photoInitial.style.display='block';
+    photoInitial.textContent=u.nome.charAt(0).toUpperCase();
+  }
+  document.getElementById('ep-err').style.display='none';
+  document.getElementById('ep-ok').style.display='none';
+  openModal('modal-edit-profile');
+}
+
+function epLoadPhoto(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const photoImg=document.getElementById('ep-photo-img');
+    const photoInitial=document.getElementById('ep-photo-initial');
+    photoImg.src=e.target.result;
+    photoImg.style.display='block';
+    photoInitial.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveProfile(){
+  const errEl=document.getElementById('ep-err');
+  const okEl=document.getElementById('ep-ok');
+  errEl.style.display='none';
+  okEl.style.display='none';
+  const u=db.users.find(x=>x.user===currentUser);
+  if(!u)return;
+  const nome=document.getElementById('ep-nome').value.trim();
+  const pass=document.getElementById('ep-pass').value;
+  const pass2=document.getElementById('ep-pass2').value;
+  const photoImg=document.getElementById('ep-photo-img');
+  if(!nome){errEl.textContent='Nome não pode ficar vazio.';errEl.style.display='block';return;}
+  if(pass&&pass!==pass2){errEl.textContent='As senhas não coincidem.';errEl.style.display='block';return;}
+  if(pass&&pass.length<4){errEl.textContent='Senha deve ter pelo menos 4 caracteres.';errEl.style.display='block';return;}
+  // Save
+  u.nome=nome;
+  if(pass){
+    u.pass=pass;
+    // Update remembered credentials if they exist
+    const saved=localStorage.getItem('lion_remember');
+    if(saved){
+      try{
+        const creds=JSON.parse(saved);
+        if(creds.user===u.user){creds.pass=pass;localStorage.setItem('lion_remember',JSON.stringify(creds));}
+      }catch(e){}
+    }
+  }
+  if(photoImg.style.display!=='none'&&photoImg.src&&photoImg.src.startsWith('data:'))u.photo=photoImg.src;
+  saveDB();
+  // Update sidebar
+  document.getElementById('s-name').textContent=u.nome;
+  const av=document.getElementById('s-avatar');
+  if(u.photo){av.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;}
+  else{av.textContent=u.nome.charAt(0).toUpperCase();}
+  okEl.style.display='block';
+  okEl.textContent='✅ Perfil atualizado com sucesso!';
+  setTimeout(()=>{closeModal('modal-edit-profile');},1400);
+}
+
 // ══════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════
@@ -1144,6 +1271,19 @@ function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
 function v(id){return document.getElementById(id).value.trim()}
 function showErr(el,msg){el.textContent=msg;el.style.display='block'}
+
+// On page load: restore saved credentials if any
+(function(){
+  try{
+    const saved=localStorage.getItem('lion_remember');
+    if(saved){
+      const creds=JSON.parse(saved);
+      document.getElementById('l-user').value=creds.user||'';
+      document.getElementById('l-pass').value=creds.pass||'';
+      document.getElementById('l-remember').checked=true;
+    }
+  }catch(e){localStorage.removeItem('lion_remember');}
+})();
 </script>
 
 <!-- ══ MODAL: PAINEL SÊNIOR ══ -->
@@ -1158,10 +1298,11 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
     </div>
 
     <!-- TABS -->
-    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid #f5a80022;margin-bottom:18px">
-      <button id="sp-tab-users" class="view-tab active" onclick="spShowTab('users')" style="flex:1">👤 Usuários Pendentes</button>
-      <button id="sp-tab-approved" class="view-tab" onclick="spShowTab('approved')" style="flex:1">✅ Aprovados</button>
-      <button id="sp-tab-projects" class="view-tab" onclick="spShowTab('projects')" style="flex:1">📁 Acesso a Projetos</button>
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid #f5a80022;margin-bottom:18px;flex-wrap:wrap">
+      <button id="sp-tab-users" class="view-tab active" onclick="spShowTab('users')" style="flex:1;min-width:110px">👤 Pendentes</button>
+      <button id="sp-tab-approved" class="view-tab" onclick="spShowTab('approved')" style="flex:1;min-width:110px">✅ Aprovados</button>
+      <button id="sp-tab-projects" class="view-tab" onclick="spShowTab('projects')" style="flex:1;min-width:110px">📁 Projetos</button>
+      <button id="sp-tab-all" class="view-tab" onclick="spShowTab('all')" style="flex:1;min-width:110px">👥 Colaboradores</button>
     </div>
 
     <!-- TAB: PENDING USERS -->
@@ -1177,6 +1318,49 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
     <!-- TAB: PROJECT ACCESS -->
     <div id="sp-panel-projects" style="display:none">
       <div id="sp-projects-list"></div>
+    </div>
+
+    <!-- TAB: ALL COLLABORATORS -->
+    <div id="sp-panel-all" style="display:none">
+      <div id="sp-all-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDIT PROFILE ══ -->
+<div class="modal-overlay" id="modal-edit-profile" style="z-index:400">
+  <div class="modal" style="max-width:480px;width:96%;max-height:92vh;overflow-y:auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px">✏️ Editar Perfil</div>
+        <div style="font-size:11px;color:var(--gray)">Atualize seus dados cadastrais</div>
+      </div>
+      <button onclick="closeModal('modal-edit-profile')" style="background:var(--p3);border:1px solid #f5a80020;color:var(--gray);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px">✕</button>
+    </div>
+
+    <!-- Photo -->
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
+      <div id="ep-photo-wrap" onclick="document.getElementById('ep-photo-input').click()" style="width:90px;height:90px;border-radius:50%;background:#2a1f00;border:3px solid var(--warn);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;color:var(--warn);cursor:pointer;overflow:hidden;margin-bottom:10px;position:relative">
+        <span id="ep-photo-initial">U</span>
+        <img id="ep-photo-img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0">
+        <div style="position:absolute;bottom:0;width:100%;background:#00000088;color:#fff;font-size:9px;text-align:center;padding:3px 0;font-family:Montserrat,sans-serif">TROCAR</div>
+      </div>
+      <input type="file" id="ep-photo-input" accept="image/*" style="display:none" onchange="epLoadPhoto(this)">
+      <div style="font-size:10px;color:var(--gray)">Clique na foto para trocar</div>
+    </div>
+
+    <!-- Fields -->
+    <div class="field"><label>Nome Completo</label><input id="ep-nome" type="text" placeholder="Seu nome completo"></div>
+    <div class="field"><label>Usuário (login)</label><input id="ep-user" type="text" placeholder="nome_usuario" readonly style="opacity:.6;cursor:not-allowed"></div>
+    <div class="field"><label>Nova Senha <span style="color:var(--gray);font-weight:400">(deixe vazio para não alterar)</span></label><input id="ep-pass" type="password" placeholder="Nova senha"></div>
+    <div class="field"><label>Confirmar Nova Senha</label><input id="ep-pass2" type="password" placeholder="Confirme a nova senha"></div>
+
+    <div id="ep-err" style="display:none;color:var(--danger);font-size:12px;margin-bottom:10px;padding:8px;background:#1a0000;border-radius:8px;border:1px solid #ef444433"></div>
+    <div id="ep-ok" style="display:none;color:#4ade80;font-size:12px;margin-bottom:10px;padding:8px;background:#001a0a;border-radius:8px;border:1px solid #4ade8033">✅ Perfil atualizado com sucesso!</div>
+
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-profile')">Cancelar</button>
+      <button class="btn-primary" onclick="saveProfile()">💾 Salvar</button>
     </div>
   </div>
 </div>
