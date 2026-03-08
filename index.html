@@ -479,12 +479,43 @@ let session = {user:null, projId:null, view:'5w2h', dashSc:'op', delProjId:null,
 // DB PERSISTENCE
 // ══════════════════════════════════════════
 function saveDB(){
-  try{localStorage.setItem('lion_db',JSON.stringify(db));}catch(e){console.warn('saveDB error',e);}
+  try{
+    // Save photos separately to avoid quota issues with large base64 images
+    const photos={};
+    db.users.forEach(u=>{if(u.photo){photos[u.user]=u.photo;}});
+    try{localStorage.setItem('lion_photos',JSON.stringify(photos));}catch(e){console.warn('saveDB photos error',e);}
+
+    // Save DB without photos to stay within quota
+    const dbClean=JSON.parse(JSON.stringify(db));
+    dbClean.users.forEach(u=>{delete u.photo;});
+    localStorage.setItem('lion_db',JSON.stringify(dbClean));
+  }catch(e){
+    console.error('saveDB error',e);
+    // Try saving without photos at all as fallback
+    try{
+      const dbClean=JSON.parse(JSON.stringify(db));
+      dbClean.users.forEach(u=>{delete u.photo;});
+      localStorage.setItem('lion_db',JSON.stringify(dbClean));
+    }catch(e2){console.error('saveDB fallback error',e2);}
+  }
 }
 function loadDB(){
   try{
     const s=localStorage.getItem('lion_db');
-    if(s){const parsed=JSON.parse(s);if(parsed&&parsed.users){Object.assign(db,parsed);}}
+    if(s){
+      const parsed=JSON.parse(s);
+      if(parsed&&parsed.users){
+        Object.assign(db,parsed);
+        // Restore photos
+        try{
+          const ps=localStorage.getItem('lion_photos');
+          if(ps){
+            const photos=JSON.parse(ps);
+            db.users.forEach(u=>{if(photos[u.user])u.photo=photos[u.user];});
+          }
+        }catch(e){console.warn('loadDB photos error',e);}
+      }
+    }
   }catch(e){localStorage.removeItem('lion_db');}
 }
 loadDB();
@@ -1298,6 +1329,11 @@ function saveProfile(){
   if(oldUser!==newUser){
     db.projects.forEach(p=>{if(Array.isArray(p.allowedUsers))p.allowedUsers=p.allowedUsers.map(x=>x===oldUser?newUser:x);});
     session.user.user=newUser;
+    // Update photo key in localStorage when username changes
+    try{
+      const ps=localStorage.getItem('lion_photos');
+      if(ps){const photos=JSON.parse(ps);if(photos[oldUser]){photos[newUser]=photos[oldUser];delete photos[oldUser];localStorage.setItem('lion_photos',JSON.stringify(photos));}}
+    }catch(e){}
   }
   if(photoImg.style.display!=='none'&&photoImg.src&&photoImg.src.startsWith('data:'))u.photo=photoImg.src;
   session.user=u;
