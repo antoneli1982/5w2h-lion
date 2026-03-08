@@ -1456,5 +1456,26 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
   </div>
 </div>
 
+
+<script>
+// ── SERVICE WORKER — registro e atualização automática ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.update();
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          newSW.postMessage('skipWaiting');
+        }
+      });
+    });
+  });
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
+}
+</script>
 </body>
 </html>
