@@ -476,6 +476,20 @@ let db = {
 let session = {user:null, projId:null, view:'5w2h', dashSc:'op', delProjId:null, delRowTarget:null, delGanttTarget:null, ganttOffset:0};
 
 // ══════════════════════════════════════════
+// DB PERSISTENCE
+// ══════════════════════════════════════════
+function saveDB(){
+  try{localStorage.setItem('lion_db',JSON.stringify(db));}catch(e){console.warn('saveDB error',e);}
+}
+function loadDB(){
+  try{
+    const s=localStorage.getItem('lion_db');
+    if(s){const parsed=JSON.parse(s);if(parsed&&parsed.users){Object.assign(db,parsed);}}
+  }catch(e){localStorage.removeItem('lion_db');}
+}
+loadDB();
+
+// ══════════════════════════════════════════
 // AUTH HELPERS
 // ══════════════════════════════════════════
 function switchAuthTab(tab){
@@ -520,6 +534,7 @@ function doRegister(){
   // Sênior aprovado automaticamente; todos os outros ficam PENDENTES até aprovação do Sênior
   const newStatus = finalRole==='senior'?'approved':'pending';
   db.users.push({nome,user,pass,role:finalRole,photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
+  saveDB();
   // ── LIMPAR TODOS OS CAMPOS DO FORMULÁRIO APÓS CRIAR A CONTA ──
   document.getElementById('r-nome').value='';
   document.getElementById('r-user').value='';
@@ -709,6 +724,7 @@ function createProject(){
   // Senior-created: all; others: only themselves for now (senior can grant access)
   const allowedUsers=creator.role==='senior'?'all':[creator.user];
   db.projects.push({id:db.nextProjId++,name,sc,rows:[],gantt:[],allowedUsers,createdBy:creator.user});
+  saveDB();
   closeModal('modal-new-proj');
   document.getElementById('np-name').value='';
   showDashboard();
@@ -727,6 +743,7 @@ function confirmDelProj(){
     showErr(err,'Senha incorreta.');return;
   }
   db.projects=db.projects.filter(p=>p.id!==session.delProjId);
+  saveDB();
   closeModal('modal-del-proj');
   showDashboard();
 }
@@ -791,7 +808,7 @@ function renderRows(p){
     const sel=document.createElement('select');sel.className='ss';
     sel.style.color=STATUS[row.status].text;sel.style.border='1.5px solid '+STATUS[row.status].text;
     [0,25,50,75,100].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+'% — '+STATUS[v].label;if(v===row.status)o.selected=true;sel.appendChild(o);});
-    sel.onchange=e=>{row.status=Number(e.target.value);renderProject(p);};
+    sel.onchange=e=>{row.status=Number(e.target.value);saveDB();renderProject(p);};
     const bw=document.createElement('div');bw.className='sbar-wrap';
     const b=document.createElement('div');b.className='sbar';
     b.style.width=row.status+'%';b.style.background=STATUS[row.status].text;b.style.boxShadow='0 0 5px '+STATUS[row.status].text;
@@ -799,7 +816,7 @@ function renderRows(p){
     const tdA=document.createElement('td');tdA.className='td-act';
     const w=document.createElement('div');w.style.cssText='display:flex;gap:4px;justify-content:center';
     const bc=document.createElement('button');bc.className='btn btn-clr';bc.textContent='🧹';
-    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;renderProject(p);};
+    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;saveDB();renderProject(p);};
     const bd=document.createElement('button');bd.className='btn btn-dr';bd.textContent='🗑️';
     bd.onclick=()=>{session.delRowTarget={pid:p.id,rid:row.id};openModal('modal-del-row');};
     w.appendChild(bc);w.appendChild(bd);tdA.appendChild(w);tr.appendChild(tdA);
@@ -810,12 +827,13 @@ function startCellEdit(td,p,rowId,field){
   const row=p.rows.find(r=>r.id===rowId);
   const ta=document.createElement('textarea');ta.className='ie';ta.value=row[field]||'';
   td.textContent='';td.appendChild(ta);ta.focus();
-  ta.onblur=()=>{row[field]=ta.value;renderRows(p);};
-  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;renderRows(p);}};
+  ta.onblur=()=>{row[field]=ta.value;saveDB();renderRows(p);};
+  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();renderRows(p);}};
 }
 function addRow(){
   const p=db.projects.find(x=>x.id===session.projId);if(!p)return;
   p.rows.push({id:db.nextRowId++,acao:'Nova ação',what:'',why:'',where:'',when:'',who:'',how:'',howMuch:'',status:0});
+  saveDB();
   renderProject(p);
 }
 function confirmDelRow(){
@@ -823,6 +841,7 @@ function confirmDelRow(){
   const {pid,rid}=session.delRowTarget;
   const p=db.projects.find(x=>x.id===pid);
   if(p)p.rows=p.rows.filter(r=>r.id!==rid);
+  saveDB();
   closeModal('modal-del-row');
   renderProject(p);
 }
@@ -962,7 +981,7 @@ function editCronCell(td,pid,gid,field){
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
-  const save=()=>{row[field]=inp.value;renderCronRows(p);};
+  const save=()=>{row[field]=inp.value;saveDB();renderCronRows(p);};
   inp.onblur=save;
   inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}};
 }
@@ -970,7 +989,7 @@ function editCronCell(td,pid,gid,field){
 function updateCronStatus(pid,gid,val){
   const p=db.projects.find(x=>x.id===pid);
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
-  if(row){row.status=Number(val);renderCronRows(p);}
+  if(row){row.status=Number(val);saveDB();renderCronRows(p);}
 }
 
 function openAddCronForm(pid){
@@ -998,6 +1017,7 @@ function addCronTask(pid){
     color:GANTT_COLORS[p.gantt.length%GANTT_COLORS.length]
   });
   closeAddCronForm(pid);
+  saveDB();
   renderGantt(p);
 }
 
@@ -1006,6 +1026,7 @@ function confirmDelGantt(){
   const {pid,gid}=session.delGanttTarget;
   const p=db.projects.find(x=>x.id===pid);
   if(p)p.gantt=p.gantt.filter(g=>g.id!==gid);
+  saveDB();
   closeModal('modal-del-gantt');
   renderGantt(p);
 }
@@ -1127,6 +1148,7 @@ function spRenderProjects(){
 function approveUser(username){
   const u=db.users.find(x=>x.user===username);
   if(u){u.status='approved';}
+  saveDB();
   updatePendingBadge();
   spRenderPending();
 }
@@ -1134,6 +1156,7 @@ function approveUser(username){
 function rejectUser(username, fromApproved=false){
   const u=db.users.find(x=>x.user===username);
   if(u){u.status='rejected';}
+  saveDB();
   updatePendingBadge();
   if(fromApproved)spRenderApproved(); else spRenderPending();
 }
@@ -1153,6 +1176,7 @@ function toggleProjectAccess(pid, username){
       p.allowedUsers=[...p.allowedUsers,username];
     }
   }
+  saveDB();
   spRenderProjects();
 }
 
