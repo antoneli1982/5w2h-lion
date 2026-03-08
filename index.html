@@ -369,6 +369,10 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           <span id="pending-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;border-radius:99px;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif"></span>
         </button>
       </div>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button onclick="exportarDados()" style="flex:1;background:#2a1e00;color:#f5a800;border:1px solid #f5a80033;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">📤 Exportar</button>
+        <button onclick="importarDados()" style="flex:1;background:#001a1a;color:#38d9d9;border:1px solid #38d9d933;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">📥 Importar</button>
+      </div>
       <button onclick="openEditProfile()" style="width:100%;background:#1a1a1a;color:var(--gray2);border:1px solid #f5a80020;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px;font-family:Montserrat,sans-serif">✏️ Editar Perfil</button>
       <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
     </div>
@@ -1476,6 +1480,68 @@ if ('serviceWorker' in navigator) {
     if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }
+</script>
+<script>
+
+  // ── SYNC CONSTANTS ──
+  const DB_KEY = 'lion_db';
+  const PH_KEY = 'lion_photos';
+  const APP_ID = 'lion_5w2h';
+
+
+// ── EXPORTAR / IMPORTAR DADOS ──────────────────────────────────────────────
+function exportarDados() {
+  try {
+    const db   = JSON.parse(localStorage.getItem(DB_KEY)  || '{}');
+    const ph   = JSON.parse(localStorage.getItem(PH_KEY)  || '{}');
+    const payload = { __app: APP_ID, __v: 1, __ts: new Date().toISOString(), db, photos: ph };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = APP_ID + '_backup_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ Backup exportado com sucesso!');
+  } catch(e) { showToast('❌ Erro ao exportar: ' + e.message); }
+}
+
+function importarDados() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const payload = JSON.parse(ev.target.result);
+        if (!payload.__app || !payload.db) throw new Error('Arquivo inválido ou corrompido.');
+        if (!confirm('⚠️ Isso vai SUBSTITUIR todos os dados locais pelo backup.\nTem certeza?')) return;
+        localStorage.setItem(DB_KEY, JSON.stringify(payload.db));
+        if (payload.photos) localStorage.setItem(PH_KEY, JSON.stringify(payload.photos));
+        showToast('✅ Dados importados! Recarregando...');
+        setTimeout(() => location.reload(), 1200);
+      } catch(err) { showToast('❌ Erro ao importar: ' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+function showToast(msg) {
+  let t = document.getElementById('_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_toast';
+    t.style = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-family:Montserrat,sans-serif;z-index:9999;box-shadow:0 4px 24px #0008;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.style.opacity = '0', 3000);
+}
+
 </script>
 </body>
 </html>
