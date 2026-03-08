@@ -1165,34 +1165,48 @@ function spRenderAll(){
   }
   const statusColor={'approved':'#4ade80','pending':'var(--warn)','rejected':'var(--danger)'};
   const statusLabel={'approved':'✅ Aprovado','pending':'⏳ Aguardando','rejected':'❌ Reprovado'};
-  el.innerHTML=`
-    <div style="font-size:11px;color:var(--gray);margin-bottom:12px;padding:0 4px">Total: <b style="color:#fff">${all.length}</b> colaborador(es)</div>
-    ${all.map(u=>`
-    <div style="background:var(--p3);border:1px solid #f5a80020;border-radius:10px;padding:14px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-      <div style="width:42px;height:42px;border-radius:50%;background:#2a1f00;border:2px solid ${u.role==='op'?'var(--sky)':'var(--warn)'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:${u.role==='op'?'var(--sky)':'var(--warn)'};flex-shrink:0;overflow:hidden">
-        ${u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.nome.charAt(0).toUpperCase()}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:#fff">${u.nome}</div>
-        <div style="font-size:10px;color:var(--gray);margin-top:2px">@${u.user} · ${u.role==='op'?'🔵 Operacional':'💰 Financeiro'}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:11px;font-weight:700;color:${statusColor[u.status]||'var(--gray)'}">${statusLabel[u.status]||u.status}</div>
-      </div>
-    </div>`).join('')}`;
+  const opUsers=all.filter(u=>u.role==='op');
+  const finUsers=all.filter(u=>u.role==='fin');
+  function renderTable(users,sectionLabel,color,icon){
+    if(!users.length)return`<div style="background:var(--p3);border:1px solid ${color}22;border-radius:12px;padding:14px 18px;margin-bottom:18px"><div style="font-size:13px;font-weight:800;color:${color};font-family:Montserrat,sans-serif;margin-bottom:8px">${icon} ${sectionLabel} <span style="font-size:11px;color:var(--gray);font-weight:400">(0 colaboradores)</span></div><div style="font-size:11px;color:var(--gray);padding:6px 0">Nenhum colaborador neste perfil.</div></div>`;
+    let rows=users.map((u,i)=>{
+      const bg=i%2===0?'transparent':'#ffffff08';
+      const sc=statusColor[u.status]||'var(--gray)';
+      const sl=statusLabel[u.status]||u.status;
+      const avatar=u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.nome.charAt(0).toUpperCase();
+      return `<tr style="border-bottom:1px solid #f5a80010;background:${bg}"><td style="padding:8px 10px"><div style="width:34px;height:34px;border-radius:50%;background:#2a1f00;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${color};overflow:hidden">${avatar}</div></td><td style="padding:8px 10px;color:#fff;font-weight:600;white-space:nowrap">${u.nome}</td><td style="padding:8px 10px;color:var(--gray2);white-space:nowrap">@${u.user}</td><td style="padding:8px 10px;font-weight:700;color:${sc};white-space:nowrap">${sl}</td><td style="padding:8px 10px;text-align:center"><button onclick="deleteCollaborator('${u.user}')" style="background:#1a0000;color:var(--danger);border:1px solid #ef444433;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer" onmouseover="this.style.background='#330000'" onmouseout="this.style.background='#1a0000'">🗑️</button></td></tr>`;
+    }).join('');
+    return `<div style="background:var(--p3);border:1px solid ${color}33;border-radius:12px;padding:16px 18px;margin-bottom:18px"><div style="font-size:13px;font-weight:800;color:${color};font-family:Montserrat,sans-serif;margin-bottom:14px">${icon} ${sectionLabel} <span style="font-size:11px;color:var(--gray);font-weight:400">(${users.length} colaborador${users.length>1?'es':''})</span></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1.5px solid ${color}44"><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">FOTO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">NOME</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">USUÁRIO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">STATUS</th><th style="text-align:center;padding:6px 10px;color:${color};font-weight:700">AÇÕES</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
+  el.innerHTML=`<div style="font-size:11px;color:var(--gray);margin-bottom:14px;padding:0 2px">Total geral: <b style="color:#fff">${all.length}</b> colaborador${all.length>1?'es':''} cadastrado${all.length>1?'s':''}</div>${renderTable(opUsers,'Operacional','#60a5fa','🔵')}${renderTable(finUsers,'Financeiro','#f5a800','💰')}`;
+}
+
+function deleteCollaborator(username){
+  if(!confirm(`Tem certeza que deseja EXCLUIR permanentemente o colaborador "@${username}"?\n\nEsta ação não pode ser desfeita.`))return;
+  db.users=db.users.filter(u=>u.user!==username);
+  // Remove from project access lists
+  db.projects.forEach(p=>{
+    if(Array.isArray(p.allowedUsers))p.allowedUsers=p.allowedUsers.filter(u=>u!==username);
+  });
+  saveDB();
+  updatePendingBadge();
+  spRenderAll();
 }
 
 // ══════════════════════════════════════════
 // PROFILE EDIT
 // ══════════════════════════════════════════
 function openEditProfile(){
-  const u=db.users.find(x=>x.user===currentUser);
-  if(!u)return;
-  document.getElementById('ep-nome').value=u.nome;
-  document.getElementById('ep-user').value=u.user;
+  if(!session.user){alert('Sessão expirada. Faça login novamente.');return;}
+  const u=session.user;
+  document.getElementById('ep-nome').value=u.nome||'';
+  document.getElementById('ep-user').value=u.user||'';
   document.getElementById('ep-pass').value='';
   document.getElementById('ep-pass2').value='';
-  const photoWrap=document.getElementById('ep-photo-wrap');
+  const perfilSel=document.getElementById('ep-perfil');
+  if(perfilSel)perfilSel.value=u.role==='senior'?'op':(u.role||'op');
+  if(u.role==='senior'&&perfilSel)perfilSel.disabled=true;
+  else if(perfilSel)perfilSel.disabled=false;
   const photoImg=document.getElementById('ep-photo-img');
   const photoInitial=document.getElementById('ep-photo-initial');
   if(u.photo){
@@ -1202,11 +1216,13 @@ function openEditProfile(){
   } else {
     photoImg.style.display='none';
     photoInitial.style.display='block';
-    photoInitial.textContent=u.nome.charAt(0).toUpperCase();
+    photoInitial.textContent=(u.nome||'U').charAt(0).toUpperCase();
   }
   document.getElementById('ep-err').style.display='none';
   document.getElementById('ep-ok').style.display='none';
-  openModal('modal-edit-profile');
+  const fileInput=document.getElementById('ep-photo-input');
+  if(fileInput)fileInput.value='';
+  showScreen('screen-edit-profile');
 }
 
 function epLoadPhoto(input){
@@ -1228,38 +1244,49 @@ function saveProfile(){
   const okEl=document.getElementById('ep-ok');
   errEl.style.display='none';
   okEl.style.display='none';
-  const u=db.users.find(x=>x.user===currentUser);
-  if(!u)return;
+  if(!session.user){errEl.textContent='Sessão expirada.';errEl.style.display='block';return;}
+  const u=db.users.find(x=>x.user===session.user.user);
+  if(!u){errEl.textContent='Usuário não encontrado.';errEl.style.display='block';return;}
   const nome=document.getElementById('ep-nome').value.trim();
+  const newUser=document.getElementById('ep-user').value.trim().replace(/\s+/g,'_');
   const pass=document.getElementById('ep-pass').value;
   const pass2=document.getElementById('ep-pass2').value;
+  const perfilSel=document.getElementById('ep-perfil');
+  const newRole=perfilSel&&!perfilSel.disabled?perfilSel.value:u.role;
   const photoImg=document.getElementById('ep-photo-img');
   if(!nome){errEl.textContent='Nome não pode ficar vazio.';errEl.style.display='block';return;}
+  if(!newUser){errEl.textContent='Usuário não pode ficar vazio.';errEl.style.display='block';return;}
+  if(newUser!==u.user&&db.users.find(x=>x.user===newUser)){errEl.textContent='Este nome de usuário já está em uso.';errEl.style.display='block';return;}
   if(pass&&pass!==pass2){errEl.textContent='As senhas não coincidem.';errEl.style.display='block';return;}
   if(pass&&pass.length<4){errEl.textContent='Senha deve ter pelo menos 4 caracteres.';errEl.style.display='block';return;}
-  // Save
+  const oldUser=u.user;
   u.nome=nome;
+  u.user=newUser;
+  if(u.role!=='senior')u.role=newRole;
   if(pass){
     u.pass=pass;
-    // Update remembered credentials if they exist
     const saved=localStorage.getItem('lion_remember');
-    if(saved){
-      try{
-        const creds=JSON.parse(saved);
-        if(creds.user===u.user){creds.pass=pass;localStorage.setItem('lion_remember',JSON.stringify(creds));}
-      }catch(e){}
-    }
+    if(saved){try{const c=JSON.parse(saved);if(c.user===oldUser){c.user=newUser;c.pass=pass;localStorage.setItem('lion_remember',JSON.stringify(c));}}catch(e){}}
+  } else if(oldUser!==newUser){
+    const saved=localStorage.getItem('lion_remember');
+    if(saved){try{const c=JSON.parse(saved);if(c.user===oldUser){c.user=newUser;localStorage.setItem('lion_remember',JSON.stringify(c));}}catch(e){}}
+  }
+  if(oldUser!==newUser){
+    db.projects.forEach(p=>{if(Array.isArray(p.allowedUsers))p.allowedUsers=p.allowedUsers.map(x=>x===oldUser?newUser:x);});
+    session.user.user=newUser;
   }
   if(photoImg.style.display!=='none'&&photoImg.src&&photoImg.src.startsWith('data:'))u.photo=photoImg.src;
+  session.user=u;
   saveDB();
-  // Update sidebar
   document.getElementById('s-name').textContent=u.nome;
+  const roleEl2=document.getElementById('s-role');
+  if(roleEl2)roleEl2.textContent=u.role==='senior'?'👑 Sênior':u.role==='fin'?'💰 Financeiro':'🔵 Operacional';
   const av=document.getElementById('s-avatar');
-  if(u.photo){av.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;}
-  else{av.textContent=u.nome.charAt(0).toUpperCase();}
+  if(u.photo){av.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;av.style.fontSize='0';}
+  else{av.textContent=u.nome.charAt(0).toUpperCase();av.style.fontSize='';}
   okEl.style.display='block';
   okEl.textContent='✅ Perfil atualizado com sucesso!';
-  setTimeout(()=>{closeModal('modal-edit-profile');},1400);
+  setTimeout(()=>{showScreen('screen-app');},1400);
 }
 
 // ══════════════════════════════════════════
@@ -1327,40 +1354,44 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
   </div>
 </div>
 
-<!-- ══ MODAL: EDIT PROFILE ══ -->
-<div class="modal-overlay" id="modal-edit-profile" style="z-index:400">
-  <div class="modal" style="max-width:480px;width:96%;max-height:92vh;overflow-y:auto;padding:24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div>
-        <div class="modal-title" style="margin-bottom:2px">✏️ Editar Perfil</div>
-        <div style="font-size:11px;color:var(--gray)">Atualize seus dados cadastrais</div>
+<!-- ══ SCREEN: EDIT PROFILE ══ -->
+<div id="screen-edit-profile" class="screen">
+  <div class="auth-card fade-in">
+    <div class="auth-logo"><img src="data:image/png;base64,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" alt="LION"></div>
+    <div class="auth-title">Plataforma 5W2H</div>
+    <div class="auth-sub">LION · Editar Perfil</div>
+
+    <!-- Photo upload -->
+    <div class="photo-upload-wrap">
+      <div class="photo-preview" onclick="document.getElementById('ep-photo-input').click()" title="Clique para trocar foto">
+        <span id="ep-photo-icon" style="display:none">📷</span>
+        <span id="ep-photo-initial" style="font-size:34px;font-weight:800;color:var(--warn)">U</span>
+        <img id="ep-photo-img" src="" alt="" style="display:none">
+        <div class="photo-overlay">✏️</div>
       </div>
-      <button onclick="closeModal('modal-edit-profile')" style="background:var(--p3);border:1px solid #f5a80020;color:var(--gray);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px">✕</button>
+      <div class="photo-label">Foto de Perfil</div>
+      <div class="photo-hint">Clique no círculo ou no botão abaixo</div>
+      <input type="file" id="ep-photo-input" accept="image/*" onchange="epLoadPhoto(this)" style="display:block;width:100%;opacity:0;height:0;overflow:hidden">
+      <button type="button" onclick="document.getElementById('ep-photo-input').click()" style="background:var(--p3);color:var(--green);border:1.5px solid #f5a80044;border-radius:8px;padding:6px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.5px;margin-top:2px">📁 TROCAR FOTO</button>
     </div>
 
-    <!-- Photo -->
-    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
-      <div id="ep-photo-wrap" onclick="document.getElementById('ep-photo-input').click()" style="width:90px;height:90px;border-radius:50%;background:#2a1f00;border:3px solid var(--warn);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;color:var(--warn);cursor:pointer;overflow:hidden;margin-bottom:10px;position:relative">
-        <span id="ep-photo-initial">U</span>
-        <img id="ep-photo-img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0">
-        <div style="position:absolute;bottom:0;width:100%;background:#00000088;color:#fff;font-size:9px;text-align:center;padding:3px 0;font-family:Montserrat,sans-serif">TROCAR</div>
-      </div>
-      <input type="file" id="ep-photo-input" accept="image/*" style="display:none" onchange="epLoadPhoto(this)">
-      <div style="font-size:10px;color:var(--gray)">Clique na foto para trocar</div>
-    </div>
-
-    <!-- Fields -->
     <div class="field"><label>Nome Completo</label><input id="ep-nome" type="text" placeholder="Seu nome completo"></div>
-    <div class="field"><label>Usuário (login)</label><input id="ep-user" type="text" placeholder="nome_usuario" readonly style="opacity:.6;cursor:not-allowed"></div>
+    <div class="field"><label>Usuário (login)</label><input id="ep-user" type="text" placeholder="nome_usuario"></div>
+    <div class="field"><label>Perfil de Acesso</label>
+      <select id="ep-perfil" style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80030;border-radius:10px;padding:11px 14px;font-size:13px;font-family:Montserrat,sans-serif;outline:none">
+        <option value="op">🔵 Operacional</option>
+        <option value="fin">💰 Financeiro</option>
+      </select>
+    </div>
     <div class="field"><label>Nova Senha <span style="color:var(--gray);font-weight:400">(deixe vazio para não alterar)</span></label><input id="ep-pass" type="password" placeholder="Nova senha"></div>
     <div class="field"><label>Confirmar Nova Senha</label><input id="ep-pass2" type="password" placeholder="Confirme a nova senha"></div>
 
     <div id="ep-err" style="display:none;color:var(--danger);font-size:12px;margin-bottom:10px;padding:8px;background:#1a0000;border-radius:8px;border:1px solid #ef444433"></div>
     <div id="ep-ok" style="display:none;color:#4ade80;font-size:12px;margin-bottom:10px;padding:8px;background:#001a0a;border-radius:8px;border:1px solid #4ade8033">✅ Perfil atualizado com sucesso!</div>
 
-    <div class="modal-btns">
-      <button class="btn-secondary" onclick="closeModal('modal-edit-profile')">Cancelar</button>
-      <button class="btn-primary" onclick="saveProfile()">💾 Salvar</button>
+    <button class="btn-auth" onclick="saveProfile()">💾 SALVAR ALTERAÇÕES</button>
+    <div style="margin-top:12px;text-align:center">
+      <span onclick="showScreen('screen-app')" style="color:var(--warn);font-size:12px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:600">← Voltar sem salvar</span>
     </div>
   </div>
 </div>
