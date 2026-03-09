@@ -1021,13 +1021,41 @@ function renderProject(p){
           <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático 3s após qualquer edição</div>
         </div>
 
-        <!-- Col 2: mensagem interna -->
+        <!-- Col 2: envio de mensagem por e-mail -->
         <div style="padding:12px 16px">
-          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">💬 Mensagem interna do projeto</div>
-          <textarea id="ep-msg" rows="3" placeholder="Recados, observações ou contexto para quem acessar este projeto..."
-            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.5"
-            oninput="epSaveMsg()"></textarea>
-          <div id="ep-msg-ok" style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-top:4px;text-align:right;opacity:0;transition:opacity .3s">✔ salvo</div>
+          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">✉️ Enviar Mensagem por E-mail</div>
+
+          <!-- Destinatário: todos ou específico -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">PARA</div>
+            <select id="ep-to"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
+              <option value="__all__">📢 Todos os destinatários</option>
+            </select>
+          </div>
+
+          <!-- Assunto -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">ASSUNTO</div>
+            <input id="ep-subj" type="text" placeholder="Ex: Atualização importante do projeto"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+          </div>
+
+          <!-- Mensagem -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">MENSAGEM</div>
+            <textarea id="ep-msg" rows="3" placeholder="Digite a mensagem que será enviada..."
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:none;box-sizing:border-box;line-height:1.5"></textarea>
+          </div>
+
+          <!-- Botão enviar -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onclick="epSendManual()"
+              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:8px 18px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;box-shadow:0 0 10px #f5a80033">
+              🚀 Enviar
+            </button>
+            <span id="ep-send-status" style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif"></span>
+          </div>
         </div>
 
       </div>
@@ -1782,15 +1810,6 @@ function showToast(msg) {
 </script>
 
 
-function {
-  const btn = document.getElementById('tab-email-btn');
-  if(!btn) return;
-  const u = db.users.find(x => x.user === session.user);
-  btn.style.display = (u && u.role === 'senior') ? 'inline-block' : 'none';
-}
-</script>
-
-
 <script>
 // ══ EMAIL & NOTIF — versão limpa ══════════════════════════════
 
@@ -1817,6 +1836,7 @@ function epRender(p) {
   if (ta) ta.value = p.internalMsg || '';
   // chips
   epChips(p);
+  epFillSelect(p);
 }
 
 function epChips(p) {
@@ -1852,14 +1872,16 @@ function epSaveCfg() {
 function epAddEmail() {
   const inp = document.getElementById('ep-newemail'); if (!inp) return;
   const em = inp.value.trim().toLowerCase();
-  if (!em || !em.includes('@') || !em.includes('.')) { showToast('❌ E-mail inválido!'); return; }
-  const p = db.projects.find(x => x.id === session.projId); if (!p) return;
+  if (!em || !em.includes('@') || !em.includes('.')) { showToast('❌ E-mail inválido!'); inp.focus(); return; }
+  const pid = session.projId;
+  const p = pid != null ? db.projects.find(x => x.id === pid) : null;
+  if (!p) { showToast('❌ Projeto não encontrado!'); return; }
   if (!p.emails) p.emails = [];
-  if (p.emails.includes(em)) { showToast('⚠️ Já cadastrado!'); return; }
-  p.emails.push(em); saveDB(); inp.value = '';
+  if (p.emails.includes(em)) { showToast('⚠️ Já cadastrado!'); inp.value=''; return; }
+  p.emails.push(em); saveDB(); inp.value = ''; inp.focus();
   const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
-  epChips(p); showToast('✅ ' + em + ' adicionado!');
+  epChips(p); epFillSelect(p); showToast('✅ ' + em + ' adicionado!');
 }
 
 function epRemove(pid, idx) {
@@ -1867,18 +1889,9 @@ function epRemove(pid, idx) {
   const em = p.emails.splice(idx, 1)[0]; saveDB();
   const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
-  epChips(p); showToast('🗑️ ' + em + ' removido.');
+  epChips(p); epFillSelect(p); showToast('🗑️ ' + em + ' removido.');
 }
 
-let _epMsgT = null;
-function epSaveMsg() {
-  clearTimeout(_epMsgT);
-  _epMsgT = setTimeout(() => {
-    const p = db.projects.find(x => x.id === session.projId); if (!p) return;
-    const ta = document.getElementById('ep-msg'); if (!ta) return;
-    p.internalMsg = ta.value; saveDB();
-    const ok = document.getElementById('ep-msg-ok');
-    if (ok) { ok.style.opacity = '1'; setTimeout(() => ok.style.opacity = '0', 2000); }
   }, 800);
 }
 
