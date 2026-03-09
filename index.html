@@ -185,7 +185,6 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 .view-tab{padding:8px 18px;font-size:12px;font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;background:var(--p3);color:var(--gray);transition:all .2s;border:none}
 .view-tab.active{background:#f5a80018;color:var(--green)}
 .view-tab.cron.active{background:#38bdf818;color:var(--sky)}
-.view-tab.email.active{background:#2a1e00;color:#f5a800}
 .stats-bar{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .stat-pill{background:var(--p2);border:1px solid #f5a80018;border-radius:10px;padding:9px 14px;text-align:center;min-width:85px}
 .stat-pill .v{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;line-height:1}
@@ -812,7 +811,6 @@ function openProject(id,view){
     ?'<span class="topbar-badge badge-fin">💰 Financeiro</span>'
     :'<span class="topbar-badge badge-op">🔵 Operacional</span>';
   if(view==='gantt')renderGantt(p);
-  else if(view==='email')renderEmailView(p);
   else renderProject(p);
 }
 
@@ -829,13 +827,62 @@ function renderProject(p){
       <div class="view-tabs">
         <button class="view-tab active" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
         <button class="view-tab cron" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
-        ${session.user&&db.users.find(u=>u.user===session.user)?.role==='senior'?`<button class="view-tab email" onclick="openProject(${p.id},'email')">📧 E-mail</button>`:''}
       </div>
     </div>
     <div class="stats-bar">
       <div class="stat-pill"><div class="v" style="color:var(--green)">${t}</div><div class="l">Ações</div></div>
       <div class="stat-pill"><div class="v" style="color:var(--success)">${d}</div><div class="l">Concluídas</div></div>
       <div class="gbar-wrap"><div class="gbar-track"><div class="gbar-fill" style="width:${avg}%"></div></div><div class="gbar-pct">${avg}%</div></div>
+    </div>
+    <!-- ── PAINEL E-MAIL DO PROJETO ── -->
+    <div id="proj-email-panel" style="display:none;background:#2a1e00;border:1px solid #f5a80033;border-radius:12px;padding:16px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">📧</span>
+          <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800">NOTIFICAÇÕES DO PROJETO</span>
+          <span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Todos recebem aviso a cada atualização</span>
+        </div>
+        <button onclick="toggleEmailConfig()" style="background:var(--p2);color:var(--gray2);border:1px solid #f5a80022;border-radius:7px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">⚙️ Configurar EmailJS</button>
+      </div>
+
+      <!-- Config EmailJS (colapsável) -->
+      <div id="emailjs-cfg-box" style="display:none;margin-top:12px;padding:12px;background:var(--p2);border-radius:8px;border:1px solid #f5a80018">
+        <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px">
+          🔑 Cole aqui as chaves do <a href="https://www.emailjs.com" target="_blank" style="color:#f5a800">emailjs.com</a> (gratuito · 200 e-mails/mês)
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">SERVICE ID</div>
+            <input id="ejs-service" type="text" placeholder="service_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">TEMPLATE ID</div>
+            <input id="ejs-template" type="text" placeholder="template_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">PUBLIC KEY</div>
+            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de e-mails + adicionar -->
+      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center" id="email-chips"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="new-email-input" type="email" placeholder="Adicionar e-mail destinatário..."
+          style="flex:1;background:var(--p2);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:8px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;min-width:0"
+          onkeydown="if(event.key==='Enter')addEmailToProject(session.projId)">
+        <button onclick="addEmailToProject(session.projId)"
+          style="background:#f5a800;color:#111;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap">
+          ➕ Adicionar
+        </button>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -850,7 +897,7 @@ function renderProject(p){
 
 
   `;
-  renderRows(p);buildLegend();
+  renderRows(p);buildLegend();renderEmailPanel(p);
 }
 
 function renderRows(p){
@@ -868,7 +915,7 @@ function renderRows(p){
     const sel=document.createElement('select');sel.className='ss';
     sel.style.color=STATUS[row.status].text;sel.style.border='1.5px solid '+STATUS[row.status].text;
     [0,25,50,75,100].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+'% — '+STATUS[v].label;if(v===row.status)o.selected=true;sel.appendChild(o);});
-    sel.onchange=e=>{row.status=Number(e.target.value);saveDB();renderProject(p);};
+    sel.onchange=e=>{row.status=Number(e.target.value);saveDB();notifyProjectUpdate(p);renderProject(p);};
     const bw=document.createElement('div');bw.className='sbar-wrap';
     const b=document.createElement('div');b.className='sbar';
     b.style.width=row.status+'%';b.style.background=STATUS[row.status].text;b.style.boxShadow='0 0 5px '+STATUS[row.status].text;
@@ -886,7 +933,7 @@ function renderRows(p){
       const btnRem=document.createElement('button');
       btnRem.style.cssText='background:#2a0808;color:#ef4444;border:1px solid #ef444433;border-radius:5px;font-size:9px;padding:2px 6px;cursor:pointer;font-family:Montserrat,sans-serif';
       btnRem.textContent='✕ remover';
-      btnRem.onclick=()=>{row.anexo=null;row.anexoNome='';row.anexoTipo='';saveDB();renderProject(p);};
+      btnRem.onclick=()=>{row.anexo=null;row.anexoNome='';row.anexoTipo='';saveDB();notifyProjectUpdate(p);renderProject(p);};
       anexoWrap.appendChild(nm);anexoWrap.appendChild(btnRem);
     } else {
       // Sem anexo: botão de upload
@@ -898,7 +945,7 @@ function renderRows(p){
         const reader=new FileReader();
         reader.onload=ev=>{
           row.anexo=ev.target.result;row.anexoNome=file.name;row.anexoTipo=file.type;
-          saveDB();renderProject(p);
+          saveDB();notifyProjectUpdate(p);renderProject(p);
         };
         reader.readAsDataURL(file);
       };
@@ -912,7 +959,7 @@ function renderRows(p){
     const tdA=document.createElement('td');tdA.className='td-act';
     const w=document.createElement('div');w.style.cssText='display:flex;gap:4px;justify-content:center';
     const bc=document.createElement('button');bc.className='btn btn-clr';bc.textContent='🧹';
-    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;saveDB();renderProject(p);};
+    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;saveDB();notifyProjectUpdate(p);renderProject(p);};
     const bd=document.createElement('button');bd.className='btn btn-dr';bd.textContent='🗑️';
     bd.onclick=()=>{session.delRowTarget={pid:p.id,rid:row.id};openModal('modal-del-row');};
     w.appendChild(bc);w.appendChild(bd);tdA.appendChild(w);tr.appendChild(tdA);
@@ -923,13 +970,13 @@ function startCellEdit(td,p,rowId,field){
   const row=p.rows.find(r=>r.id===rowId);
   const ta=document.createElement('textarea');ta.className='ie';ta.value=row[field]||'';
   td.textContent='';td.appendChild(ta);ta.focus();
-  ta.onblur=()=>{row[field]=ta.value;saveDB();renderRows(p);};
-  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();renderRows(p);}};
+  ta.onblur=()=>{row[field]=ta.value;saveDB();notifyProjectUpdate(p);renderRows(p);};
+  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();notifyProjectUpdate(p);renderRows(p);}};
 }
 function addRow(){
   const p=db.projects.find(x=>x.id===session.projId);if(!p)return;
   p.rows.push({id:db.nextRowId++,acao:'Nova ação',what:'',why:'',where:'',when:'',who:'',how:'',howMuch:'',status:0,anexo:null,anexoNome:'',anexoTipo:''});
-  saveDB();
+  saveDB();notifyProjectUpdate(p);
   renderProject(p);
 }
 function confirmDelRow(){
@@ -1077,7 +1124,7 @@ function editCronCell(td,pid,gid,field){
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
-  const save=()=>{row[field]=inp.value;saveDB();renderCronRows(p);};
+  const save=()=>{row[field]=inp.value;saveDB();notifyProjectUpdate(p);renderCronRows(p);};
   inp.onblur=save;
   inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}};
 }
@@ -1085,7 +1132,7 @@ function editCronCell(td,pid,gid,field){
 function updateCronStatus(pid,gid,val){
   const p=db.projects.find(x=>x.id===pid);
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
-  if(row){row.status=Number(val);saveDB();renderCronRows(p);}
+  if(row){row.status=Number(val);saveDB();notifyProjectUpdate(p);renderCronRows(p);}
 }
 
 function openAddCronForm(pid){
@@ -1113,7 +1160,7 @@ function addCronTask(pid){
     color:GANTT_COLORS[p.gantt.length%GANTT_COLORS.length]
   });
   closeAddCronForm(pid);
-  saveDB();
+  saveDB();notifyProjectUpdate(p);
   renderGantt(p);
 }
 
@@ -1876,5 +1923,136 @@ function renderEmailView(p){
   </div>`;
 }
 
+<script>
+// ── MOSTRAR ABA EMAIL PARA SÊNIOR ──────────────────────────────────────
+function showEmailTab(){
+  const btn = document.getElementById('tab-email-btn');
+  if(!btn) return;
+  const u = db.users.find(x => x.user === session.user);
+  btn.style.display = (u && u.role === 'senior') ? 'inline-block' : 'none';
+}
+</script>
+<script>
+// ══════════════════════════════════════════════════════════
+// EMAIL NOTIFICATIONS — AUTO DISPARO A CADA ATUALIZAÇÃO
+// ══════════════════════════════════════════════════════════
+
+function renderEmailPanel(p) {
+  const panel = document.getElementById('proj-email-panel');
+  if (!panel) return;
+  const u = db.users.find(x => x.user === session.user);
+  if (!u || u.role !== 'senior') { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  // Fill EmailJS config fields
+  const cfg = p.emailjsConfig || {};
+  const svc = document.getElementById('ejs-service');
+  const tpl = document.getElementById('ejs-template');
+  const pub = document.getElementById('ejs-pubkey');
+  if (svc) svc.value = cfg.serviceId || '';
+  if (tpl) tpl.value = cfg.templateId || '';
+  if (pub) pub.value = cfg.publicKey || '';
+
+  // Render email chips
+  const chips = document.getElementById('email-chips');
+  if (!chips) return;
+  chips.innerHTML = '';
+  if (!p.emails || p.emails.length === 0) {
+    chips.innerHTML = '<span style="font-size:11px;color:var(--gray);font-family:Montserrat,sans-serif">Nenhum e-mail cadastrado. Adicione abaixo para receber notificações.</span>';
+    return;
+  }
+  p.emails.forEach((em, i) => {
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:var(--p2);border:1px solid #f5a80022;border-radius:20px;padding:4px 10px 4px 12px';
+    chip.innerHTML = `
+      <span style="font-size:11px;color:var(--gray2);font-family:Montserrat,sans-serif">${em}</span>
+      <button onclick="removeEmail(${p.id},${i})" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:0;line-height:1" title="Remover">✕</button>
+    `;
+    chips.appendChild(chip);
+  });
+}
+
+function toggleEmailConfig() {
+  const box = document.getElementById('emailjs-cfg-box');
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveEmailjsConfig(pid) {
+  const p = db.projects.find(x => x.id === pid); if (!p) return;
+  if (!p.emailjsConfig) p.emailjsConfig = {};
+  const svc = document.getElementById('ejs-service');
+  const tpl = document.getElementById('ejs-template');
+  const pub = document.getElementById('ejs-pubkey');
+  p.emailjsConfig.serviceId  = svc ? svc.value.trim() : '';
+  p.emailjsConfig.templateId = tpl ? tpl.value.trim() : '';
+  p.emailjsConfig.publicKey  = pub ? pub.value.trim() : '';
+  saveDB();
+}
+
+function addEmailToProject(pid) {
+  const inp = document.getElementById('new-email-input'); if (!inp) return;
+  const em = inp.value.trim().toLowerCase();
+  if (!em || !/^[^@]+@[^@]+\.[^@]+$/.test(em)) { showToast('❌ E-mail inválido!'); return; }
+  const p = db.projects.find(x => x.id === pid); if (!p) return;
+  if (!p.emails) p.emails = [];
+  if (p.emails.includes(em)) { showToast('⚠️ E-mail já cadastrado!'); return; }
+  p.emails.push(em);
+  saveDB();
+  inp.value = '';
+  renderEmailPanel(p);
+  showToast('✅ ' + em + ' adicionado!');
+}
+
+function removeEmail(pid, idx) {
+  const p = db.projects.find(x => x.id === pid); if (!p || !p.emails) return;
+  const em = p.emails.splice(idx, 1)[0];
+  saveDB();
+  renderEmailPanel(p);
+  showToast('🗑️ ' + em + ' removido.');
+}
+
+// Debounce: evita disparar 10x em edições rápidas
+let _notifyTimer = null;
+function notifyProjectUpdate(p) {
+  if (!p || !p.emails || p.emails.length === 0) return;
+  const cfg = p.emailjsConfig || {};
+  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+  clearTimeout(_notifyTimer);
+  _notifyTimer = setTimeout(() => _dispatchEmails(p), 3000); // aguarda 3s após última edição
+}
+
+async function _dispatchEmails(p) {
+  const cfg = p.emailjsConfig || {};
+  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+  if (!p.emails || p.emails.length === 0) return;
+
+  try {
+    if (typeof emailjs === 'undefined') {
+      console.warn('[EMAIL] EmailJS não carregado');
+      return;
+    }
+    emailjs.init(cfg.publicKey);
+    const sender = db.users.find(u => u.user === session.user);
+    const senderName = sender?.nome || session.user || 'Sistema 5W2H';
+
+    for (const email of p.emails) {
+      try {
+        await emailjs.send(cfg.serviceId, cfg.templateId, {
+          to_email:    email,
+          to_name:     email,
+          from_name:   senderName,
+          project:     p.name,
+          assunto:     'Atualização no projeto: ' + p.name,
+          mensagem:    'O projeto "' + p.name + '" foi atualizado por ' + senderName + '. Acesse a plataforma para ver as mudanças.',
+          reply_to:    email,
+        });
+      } catch(e) { console.warn('[EMAIL] Falha para', email, e); }
+    }
+    console.log('[EMAIL] Notificações enviadas para', p.emails.length, 'destinatário(s)');
+  } catch(e) {
+    console.error('[EMAIL] Erro geral:', e);
+  }
+}
+</script>
 </body>
 </html>
