@@ -650,20 +650,20 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           } else {
             // Tenta login de novo agora com Firebase carregado
             if(!tryAutoLogin()){
-              if(typeof showLogin==='function') showLogin();
+              showScreen('screen-login');
             }
           }
         } else {
           // Firebase falhou — se não logado, mostra login
           if(!session.user){
-            if(typeof showLogin==='function') showLogin();
+            showScreen('screen-login');
           }
         }
         console.log('[FB] pronto, loaded='+loaded+', logado='+(!!session.user));
       });
 
       // Safety: esconde overlay após 5s
-      setTimeout(function(){ if(ov) ov.style.display='none'; if(!session.user&&typeof showLogin==='function') showLogin(); }, 5000);
+      setTimeout(function(){ if(ov) ov.style.display='none'; if(!session.user) showScreen('screen-login'); }, 5000);
     });
 
   })();
