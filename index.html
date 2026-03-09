@@ -265,138 +265,119 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .modal-icon{font-size:38px;margin-bottom:10px}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 </style>
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- Firebase Compat SDK (sync-friendly) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script>
+  // ── FIREBASE CONFIG ───────────────────────────────────────────────────────
+  (function() {
+    try {
+      // Load saved config from localStorage (user can override via UI)
+      var saved = {};
+      try { saved = JSON.parse(localStorage.getItem('lion_db_firebase_config') || '{}'); } catch(e) {}
 
-    // ════════════════════════════════════════════════════
-    // CONFIGURAÇÃO FIREBASE — cole aqui as suas chaves
-    // Crie grátis em: console.firebase.google.com
-    // ════════════════════════════════════════════════════
-        // Firebase config — hardcoded (mesmo projeto para todos os apps)
-    let _savedCfg = {};
-    try { _savedCfg = JSON.parse(localStorage.getItem(window._DB_KEY + '_firebase_config') || '{}'); } catch(e) {}
-    const FIREBASE_CONFIG = {
-      apiKey:            _savedCfg.apiKey            || "AIzaSyBY5LeyMDQj28MJYbVHmtggtzzclGYgHCk",
-      authDomain:        _savedCfg.authDomain        || "w2h-lion.firebaseapp.com",
-      projectId:         _savedCfg.projectId         || "w2h-lion",
-      storageBucket:     _savedCfg.storageBucket     || "w2h-lion.firebasestorage.app",
-      messagingSenderId: _savedCfg.messagingSenderId || "611200932059",
-      appId:             _savedCfg.appId             || "1:611200932059:web:b110d1743f4c4755bed4fe"
-    };
+      var FIREBASE_CFG = {
+        apiKey:            saved.apiKey            || "AIzaSyBY5LeyMDQj28MJYbVHmtggtzzclGYgHCk",
+        authDomain:        saved.authDomain        || "w2h-lion.firebaseapp.com",
+        projectId:         saved.projectId         || "w2h-lion",
+        storageBucket:     saved.storageBucket     || "w2h-lion.firebasestorage.app",
+        messagingSenderId: saved.messagingSenderId || "611200932059",
+        appId:             saved.appId             || "1:611200932059:web:b110d1743f4c4755bed4fe"
+      };
 
-    let _db_fs = null;
-    let _doc_ref = null;
-
-    async function initFirebase(appId) {
-      try {
-        if (FIREBASE_CONFIG.apiKey === "COLE_AQUI") {
-          console.warn("[Firebase] Não configurado — usando apenas localStorage.");
-          return;
-        }
-        const app = initializeApp(FIREBASE_CONFIG, appId);
-        _db_fs = getFirestore(app);
-        _doc_ref = doc(_db_fs, "apps", appId);
-        console.log("[Firebase] Conectado ✅");
-
-        // Listen for real-time changes from other devices
-        onSnapshot(_doc_ref, (snap) => {
-          if (!snap.exists()) return;
-          const data = snap.data();
-          if (!data || !data.db) return;
-          // Merge remote into local
-          try {
-            const remote = JSON.parse(data.db);
-            if (remote && remote.users) {
-              // Only update if remote is newer
-              if (!db.lastSaved || remote.lastSaved > db.lastSaved) {
-                Object.assign(db, remote);
-                // Restore photos from remote
-                if (data.photos) {
-                  const ph = JSON.parse(data.photos);
-                  db.users.forEach(u => { if (ph[u.user]) u.photo = ph[u.user]; });
-                }
-                // Save to local cache
-                const clean = JSON.parse(JSON.stringify(db));
-                clean.users.forEach(u => delete u.photo);
-                localStorage.setItem(window._DB_KEY, JSON.stringify(clean));
-                if (data.photos) localStorage.setItem(window._PH_KEY, data.photos);
-                // Refresh UI if app is loaded
-                if (typeof renderSidebar === 'function') renderSidebar();
-                if (typeof showDashboard === 'function' && session && session.user) showDashboard();
-                console.log("[Firebase] Sincronizado de outro dispositivo ✅");
-              }
-            }
-          } catch(e) { console.error("[Firebase] Sync error", e); }
-        });
-
-      } catch(e) {
-        console.warn("[Firebase] Erro ao conectar:", e.message);
+      // Init Firebase (only once)
+      if (!firebase.apps.length) {
+        firebase.initializeApp(FIREBASE_CFG);
       }
-    }
 
-    async function cloudSave(dbKey, phKey, appId) {
-      if (!_doc_ref) return;
-      try {
-        const photos = localStorage.getItem(phKey) || '{}';
-        const clean  = JSON.parse(JSON.stringify(db));
-        clean.users.forEach(u => delete u.photo);
-        clean.lastSaved = Date.now();
-        db.lastSaved = clean.lastSaved;
-        await setDoc(_doc_ref, {
-          db:     JSON.stringify(clean),
-          photos: photos,
-          updated: new Date().toISOString()
-        });
-      } catch(e) { console.warn("[Firebase] Save error:", e.message); }
-    }
+      var _db_fs   = firebase.firestore();
+      var _doc_ref = _db_fs.collection('apps').doc('lion_5w2h');
 
-    async function cloudLoad(dbKey, phKey) {
-      if (!_doc_ref) return false;
-      try {
-        const snap = await getDoc(_doc_ref);
-        if (!snap.exists()) return false;
-        const data = snap.data();
-        if (!data || !data.db) return false;
-        const remote = JSON.parse(data.db);
-        if (!remote || !remote.users) return false;
-        Object.assign(db, remote);
-        if (data.photos) {
-          const ph = JSON.parse(data.photos);
-          db.users.forEach(u => { if (ph[u.user]) u.photo = ph[u.user]; });
-          localStorage.setItem(phKey, data.photos);
+      // ── Cloud Save ──────────────────────────────────────────────────────
+      window._cloudSave = function(dbKey, phKey, appId) {
+        if (!_doc_ref) return Promise.resolve();
+        try {
+          var photos = localStorage.getItem(phKey) || '{}';
+          var clean  = JSON.parse(JSON.stringify(window.db || {}));
+          if (clean.users) clean.users.forEach(function(u){ delete u.photo; });
+          clean.lastSaved = Date.now();
+          if (window.db) window.db.lastSaved = clean.lastSaved;
+          return _doc_ref.set({
+            db:      JSON.stringify(clean),
+            photos:  photos,
+            updated: new Date().toISOString()
+          });
+        } catch(e) {
+          console.warn('[Firebase] Save error:', e.message);
+          return Promise.resolve();
         }
-        const clean = JSON.parse(JSON.stringify(db));
-        clean.users.forEach(u => delete u.photo);
-        localStorage.setItem(dbKey, JSON.stringify(clean));
-        console.log("[Firebase] Carregado da nuvem ✅");
-        return true;
-      } catch(e) {
-        console.warn("[Firebase] Load error:", e.message);
-        return false;
-      }
-    }
+      };
 
-    // Expose to global scope
-    window._firebaseReady = false;
-    window._cloudSave = cloudSave;
-    window._cloudLoad = cloudLoad;
+      // ── Cloud Load ──────────────────────────────────────────────────────
+      window._cloudLoad = function(dbKey, phKey) {
+        if (!_doc_ref) return Promise.resolve(false);
+        return _doc_ref.get().then(function(snap) {
+          if (!snap.exists) return false;
+          var data = snap.data();
+          if (!data || !data.db) return false;
+          var remote = JSON.parse(data.db);
+          if (!remote || !remote.users) return false;
+          // Only update if remote is newer
+          var localSaved = (window.db && window.db.lastSaved) || 0;
+          if (remote.lastSaved && remote.lastSaved <= localSaved) return false;
+          Object.assign(window.db, remote);
+          if (data.photos) {
+            var ph = JSON.parse(data.photos);
+            window.db.users.forEach(function(u) { if (ph[u.user]) u.photo = ph[u.user]; });
+            localStorage.setItem(phKey, data.photos);
+          }
+          // Update local cache
+          var clean2 = JSON.parse(JSON.stringify(window.db));
+          clean2.users.forEach(function(u){ delete u.photo; });
+          localStorage.setItem(dbKey, JSON.stringify(clean2));
+          console.log('[Firebase] Carregado da nuvem ✅');
+          return true;
+        }).catch(function(e) {
+          console.warn('[Firebase] Load error:', e.message);
+          return false;
+        });
+      };
 
-    // Auto-init on load
-    document.addEventListener('DOMContentLoaded', async () => {
-      await initFirebase(window._APP_ID || 'app');
+      // ── Real-time listener (other devices) ─────────────────────────────
+      _doc_ref.onSnapshot(function(snap) {
+        if (!snap.exists) return;
+        var data = snap.data();
+        if (!data || !data.db) return;
+        try {
+          var remote = JSON.parse(data.db);
+          if (!remote || !remote.users) return;
+          var localSaved = (window.db && window.db.lastSaved) || 0;
+          if (remote.lastSaved && remote.lastSaved <= localSaved) return;
+          Object.assign(window.db, remote);
+          if (data.photos) {
+            var ph2 = JSON.parse(data.photos);
+            window.db.users.forEach(function(u) { if (ph2[u.user]) u.photo = ph2[u.user]; });
+          }
+          // Refresh sidebar/UI
+          if (typeof renderSidebar === 'function') renderSidebar();
+          if (typeof showToast === 'function') showToast('☁️ Dados sincronizados!');
+          console.log('[Firebase] Sync em tempo real ✅');
+        } catch(ex) { console.error('[Firebase] Snapshot error', ex); }
+      });
+
       window._firebaseReady = true;
-      // Try to load from cloud
-      const loaded = await cloudLoad(window._DB_KEY, window._PH_KEY);
-      if (loaded) {
-        // Re-initialize app with cloud data
-        if (typeof showLogin === 'function') showLogin();
-        else if (typeof showScreen === 'function') showScreen('screen-auth');
-      }
-      console.log("[Firebase] Pronto ✅");
-    });
+      console.log('[Firebase] Pronto ✅ (' + 'lion_5w2h' + ')');
+
+    } catch(initErr) {
+      console.warn('[Firebase] Não disponível:', initErr.message);
+      window._cloudSave = function() { return Promise.resolve(); };
+      window._cloudLoad = function() { return Promise.resolve(false); };
+      window._firebaseReady = false;
+    }
+  })();
   </script>
+
+</head>ipt>
 
 </head>
 <body>
@@ -665,6 +646,26 @@ function loadDB(){
   }catch(e){localStorage.removeItem('lion_db');}
 }
 loadDB();
+
+// ── Cloud sync: load from Firebase after local DB is ready ──────────────
+(function() {
+  function tryCloudLoad() {
+    if (!window._cloudLoad) { setTimeout(tryCloudLoad, 200); return; }
+    window._cloudLoad(DB_KEY, window._PH_KEY).then(function(loaded) {
+      if (loaded) {
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof showLogin === 'function') showLogin();
+        console.log('[Firebase] App atualizado da nuvem');
+      }
+    });
+  }
+  // Wait for Firebase to init (it's synchronous now, but just in case)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryCloudLoad);
+  } else {
+    tryCloudLoad();
+  }
+})();
 
 // ══════════════════════════════════════════
 // AUTH HELPERS
