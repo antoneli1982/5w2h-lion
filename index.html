@@ -265,119 +265,127 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .modal-icon{font-size:38px;margin-bottom:10px}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 </style>
-  <!-- Firebase Compat SDK (sync-friendly) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-  // ── FIREBASE CONFIG ───────────────────────────────────────────────────────
-  (function() {
-    try {
-      // Load saved config from localStorage (user can override via UI)
-      var saved = {};
-      try { saved = JSON.parse(localStorage.getItem('lion_db_firebase_config') || '{}'); } catch(e) {}
+  (function(){
+    var FB_CFG = {
+      apiKey:            "AIzaSyBY5LeyMDQj28MJYbVHmtggtzzclGYgHCk",
+      authDomain:        "w2h-lion.firebaseapp.com",
+      projectId:         "w2h-lion",
+      storageBucket:     "w2h-lion.firebasestorage.app",
+      messagingSenderId: "611200932059",
+      appId:             "1:611200932059:web:b110d1743f4c4755bed4fe"
+    };
+    var APP_DOC = 'lion_5w2h';
+    var DB_K    = 'lion_db';
+    var PH_K    = 'lion_photos';
 
-      var FIREBASE_CFG = {
-        apiKey:            saved.apiKey            || "AIzaSyBY5LeyMDQj28MJYbVHmtggtzzclGYgHCk",
-        authDomain:        saved.authDomain        || "w2h-lion.firebaseapp.com",
-        projectId:         saved.projectId         || "w2h-lion",
-        storageBucket:     saved.storageBucket     || "w2h-lion.firebasestorage.app",
-        messagingSenderId: saved.messagingSenderId || "611200932059",
-        appId:             saved.appId             || "1:611200932059:web:b110d1743f4c4755bed4fe"
-      };
+    var _fs, _ref, _myTs = 0;
 
-      // Init Firebase (only once)
-      if (!firebase.apps.length) {
-        firebase.initializeApp(FIREBASE_CFG);
-      }
+    function _init(){
+      try{
+        if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
+        _fs  = firebase.firestore();
+        _ref = _fs.collection('apps').doc(APP_DOC);
+        console.log('[FB] conectado ✅ —', APP_DOC);
 
-      var _db_fs   = firebase.firestore();
-      var _doc_ref = _db_fs.collection('apps').doc('lion_5w2h');
+        // Real-time listener
+        _ref.onSnapshot(function(snap){
+          if(!snap.exists) return;
+          var d = snap.data(); if(!d||!d.db) return;
+          try{
+            var remote = JSON.parse(d.db);
+            if(!remote||!remote.users) return;
+            var remoteTs = remote.lastSaved||0;
+            if(remoteTs > 0 && remoteTs <= _myTs) return; // ignore our own saves
+            console.log('[FB] sync recebido de outro dispositivo ✅');
+            Object.assign(db, remote);
+            if(d.photos){
+              var ph=JSON.parse(d.photos);
+              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
+            }
+            // update local cache
+            var cl=JSON.parse(JSON.stringify(db));
+            cl.users.forEach(function(u){delete u.photo;});
+            localStorage.setItem(DB_K, JSON.stringify(cl));
+            // refresh UI
+            if(typeof renderSidebar==='function') renderSidebar();
+            if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+          }catch(ex){ console.error('[FB] snapshot error',ex); }
+        }, function(err){ console.warn('[FB] snapshot err',err.code); });
 
-      // ── Cloud Save ──────────────────────────────────────────────────────
-      window._cloudSave = function(dbKey, phKey, appId) {
-        if (!_doc_ref) return Promise.resolve();
-        try {
-          var photos = localStorage.getItem(phKey) || '{}';
-          var clean  = JSON.parse(JSON.stringify(window.db || {}));
-          if (clean.users) clean.users.forEach(function(u){ delete u.photo; });
-          clean.lastSaved = Date.now();
-          if (window.db) window.db.lastSaved = clean.lastSaved;
-          return _doc_ref.set({
-            db:      JSON.stringify(clean),
-            photos:  photos,
-            updated: new Date().toISOString()
-          });
-        } catch(e) {
-          console.warn('[Firebase] Save error:', e.message);
-          return Promise.resolve();
-        }
-      };
-
-      // ── Cloud Load ──────────────────────────────────────────────────────
-      window._cloudLoad = function(dbKey, phKey) {
-        if (!_doc_ref) return Promise.resolve(false);
-        return _doc_ref.get().then(function(snap) {
-          if (!snap.exists) return false;
-          var data = snap.data();
-          if (!data || !data.db) return false;
-          var remote = JSON.parse(data.db);
-          if (!remote || !remote.users) return false;
-          // Only update if remote is newer
-          var localSaved = (window.db && window.db.lastSaved) || 0;
-          if (remote.lastSaved && remote.lastSaved <= localSaved) return false;
-          Object.assign(window.db, remote);
-          if (data.photos) {
-            var ph = JSON.parse(data.photos);
-            window.db.users.forEach(function(u) { if (ph[u.user]) u.photo = ph[u.user]; });
-            localStorage.setItem(phKey, data.photos);
-          }
-          // Update local cache
-          var clean2 = JSON.parse(JSON.stringify(window.db));
-          clean2.users.forEach(function(u){ delete u.photo; });
-          localStorage.setItem(dbKey, JSON.stringify(clean2));
-          console.log('[Firebase] Carregado da nuvem ✅');
-          return true;
-        }).catch(function(e) {
-          console.warn('[Firebase] Load error:', e.message);
-          return false;
-        });
-      };
-
-      // ── Real-time listener (other devices) ─────────────────────────────
-      _doc_ref.onSnapshot(function(snap) {
-        if (!snap.exists) return;
-        var data = snap.data();
-        if (!data || !data.db) return;
-        try {
-          var remote = JSON.parse(data.db);
-          if (!remote || !remote.users) return;
-          var localSaved = (window.db && window.db.lastSaved) || 0;
-          if (remote.lastSaved && remote.lastSaved <= localSaved) return;
-          Object.assign(window.db, remote);
-          if (data.photos) {
-            var ph2 = JSON.parse(data.photos);
-            window.db.users.forEach(function(u) { if (ph2[u.user]) u.photo = ph2[u.user]; });
-          }
-          // Refresh sidebar/UI
-          if (typeof renderSidebar === 'function') renderSidebar();
-          if (typeof showToast === 'function') showToast('☁️ Dados sincronizados!');
-          console.log('[Firebase] Sync em tempo real ✅');
-        } catch(ex) { console.error('[Firebase] Snapshot error', ex); }
-      });
-
-      window._firebaseReady = true;
-      console.log('[Firebase] Pronto ✅ (' + 'lion_5w2h' + ')');
-
-    } catch(initErr) {
-      console.warn('[Firebase] Não disponível:', initErr.message);
-      window._cloudSave = function() { return Promise.resolve(); };
-      window._cloudLoad = function() { return Promise.resolve(false); };
-      window._firebaseReady = false;
+      }catch(e){ console.warn('[FB] init error',e.message); }
     }
+
+    // Save to cloud
+    window._fbSave = function(){
+      if(!_ref) return;
+      try{
+        var cl = JSON.parse(JSON.stringify(db));
+        cl.users.forEach(function(u){delete u.photo;});
+        cl.lastSaved = Date.now();
+        _myTs = cl.lastSaved;
+        db.lastSaved = _myTs;
+        var photos = localStorage.getItem(PH_K)||'{}';
+        _ref.set({ db: JSON.stringify(cl), photos: photos, updated: new Date().toISOString() })
+          .then(function(){ console.log('[FB] salvo ✅'); })
+          .catch(function(e){ console.warn('[FB] save error', e.code, e.message); });
+      }catch(e){ console.warn('[FB] save exception',e); }
+    };
+
+    // Load from cloud
+    window._fbLoad = function(cb){
+      if(!_ref){ if(cb) cb(false); return; }
+      _ref.get().then(function(snap){
+        if(!snap.exists){ if(cb) cb(false); return; }
+        var d = snap.data(); if(!d||!d.db){ if(cb) cb(false); return; }
+        try{
+          var remote = JSON.parse(d.db);
+          if(!remote||!remote.users){ if(cb) cb(false); return; }
+          var remoteTs = remote.lastSaved||0;
+          var localTs  = db.lastSaved||0;
+          // Always prefer cloud data if it has more users or newer timestamp
+          var localUsers = (db.users||[]).length;
+          var remoteUsers = (remote.users||[]).length;
+          var shouldLoad = remoteTs > localTs || remoteUsers > localUsers || localTs === 0;
+          if(shouldLoad){
+            Object.assign(db, remote);
+            if(d.photos){
+              var ph=JSON.parse(d.photos);
+              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
+              localStorage.setItem(PH_K, d.photos);
+            }
+            var cl=JSON.parse(JSON.stringify(db));
+            cl.users.forEach(function(u){delete u.photo;});
+            localStorage.setItem(DB_K, JSON.stringify(cl));
+            console.log('[FB] carregado da nuvem ✅ users='+remoteUsers+' ts='+remoteTs);
+            if(cb) cb(true);
+          } else {
+            console.log('[FB] local já é mais novo ts='+localTs+' vs '+remoteTs);
+            if(cb) cb(false);
+          }
+        }catch(ex){ console.error('[FB] load parse error',ex); if(cb) cb(false); }
+      }).catch(function(e){ console.warn('[FB] load error',e.code,e.message); if(cb) cb(false); });
+    };
+
+    // Init immediately
+    _init();
+
+    // Load cloud data when page is ready, then refresh UI
+    document.addEventListener('DOMContentLoaded', function(){
+      window._fbLoad(function(loaded){
+        if(loaded){
+          if(typeof renderSidebar==='function') renderSidebar();
+          if(typeof showLogin==='function') showLogin();
+          console.log('[FB] UI atualizada com dados da nuvem');
+        }
+      });
+    });
+
   })();
   </script>
-
-</head>ipt>
 
 </head>
 <body>
@@ -604,28 +612,21 @@ let session = {user:null, projId:null, view:'5w2h', dashSc:'op', delProjId:null,
 // DB PERSISTENCE
 // ══════════════════════════════════════════
 function saveDB(){
+  // Local save
   try{
-    // Save photos separately to avoid quota issues with large base64 images
     const photos={};
     db.users.forEach(u=>{if(u.photo){photos[u.user]=u.photo;}});
-    try{localStorage.setItem('lion_photos',JSON.stringify(photos));}catch(e){console.warn('saveDB photos error',e);}
-
-    // Save DB without photos to stay within quota
+    try{localStorage.setItem('lion_photos',JSON.stringify(photos));}catch(e){}
     const dbClean=JSON.parse(JSON.stringify(db));
     dbClean.users.forEach(u=>{delete u.photo;});
     localStorage.setItem('lion_db',JSON.stringify(dbClean));
-  // Cloud sync
-  if (window._cloudSave) window._cloudSave(DB_KEY, window._PH_KEY, window._APP_ID).catch(()=>{});
-  }catch(e){
-    console.error('saveDB error',e);
-    // Try saving without photos at all as fallback
-    try{
-      const dbClean=JSON.parse(JSON.stringify(db));
-      dbClean.users.forEach(u=>{delete u.photo;});
-      localStorage.setItem('lion_db',JSON.stringify(dbClean));
-    }catch(e2){console.error('saveDB fallback error',e2);}
-  }
+  }catch(e){ console.error('saveDB local error',e); }
+  // Cloud save — always try, independent of local
+  try{
+    if(window._fbSave){ window._fbSave(); }
+  }catch(e){ console.warn('saveDB cloud error',e); }
 }
+
 function loadDB(){
   try{
     const s=localStorage.getItem('lion_db');
@@ -646,26 +647,7 @@ function loadDB(){
   }catch(e){localStorage.removeItem('lion_db');}
 }
 loadDB();
-
-// ── Cloud sync: load from Firebase after local DB is ready ──────────────
-(function() {
-  function tryCloudLoad() {
-    if (!window._cloudLoad) { setTimeout(tryCloudLoad, 200); return; }
-    window._cloudLoad(DB_KEY, window._PH_KEY).then(function(loaded) {
-      if (loaded) {
-        if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof showLogin === 'function') showLogin();
-        console.log('[Firebase] App atualizado da nuvem');
-      }
-    });
-  }
-  // Wait for Firebase to init (it's synchronous now, but just in case)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', tryCloudLoad);
-  } else {
-    tryCloudLoad();
-  }
-})();
+window.db = db; // expose for Firebase
 
 // ══════════════════════════════════════════
 // AUTH HELPERS
