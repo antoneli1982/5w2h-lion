@@ -1774,9 +1774,6 @@ function epRemove(pid, idx) {
   epChips(p); epFillSelect(p); showToast('🗑️ ' + em + ' removido.');
 }
 
-  }, 800);
-}
-
 let _epNotifyT = null;
 function epNotify(p) {
   if (!p?.emails?.length) return;
