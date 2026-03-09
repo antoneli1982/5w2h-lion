@@ -374,49 +374,69 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 
     // Load cloud data when page is ready, then refresh UI
     document.addEventListener('DOMContentLoaded', function(){
-      // Show loading overlay
-      var ov=document.getElementById('fb-loading');
-      var pr=document.getElementById('fb-progress');
-      if(ov){ ov.style.display='flex'; }
-      if(pr){ setTimeout(function(){ pr.style.width='80%'; }, 100); }
-      
-      window._fbLoad(function(loaded){
-        // Hide overlay
-        if(ov){ ov.style.display='none'; }
-        if(loaded){
-          if(typeof renderSidebar==='function') renderSidebar();
-          console.log('[FB] UI atualizada com dados da nuvem');
-        }
-        console.log('[FB] pronto, loaded='+loaded);
-        // Auto-login: restore full user object from session (no db.users needed)
+      // Tenta auto-login IMEDIATO com dado salvo (antes mesmo do Firebase)
+      function tryAutoLogin(){
         try{
           var sess=localStorage.getItem('lion_remember_session');
-          if(sess){
-            var savedUser=JSON.parse(sess);
-            // Refresh user from db if available, else use saved object
-            var liveUser = db.users ? db.users.find(function(u){return u.user===savedUser.user;}) : null;
-            var userObj = liveUser || savedUser;
-            if(userObj && userObj.status==='approved'){
-              session.user=userObj;
-              session.dashSc=userObj.role==='fin'?'fin':userObj.role==='cli'?'cli':'op';
-              document.getElementById('screen-login').classList.remove('active');
-              document.getElementById('screen-app').classList.add('active');
-              if(typeof renderSidebar==='function') renderSidebar();
-              console.log('[AutoLogin] ✅ sessão restaurada:',userObj.user);
-              return;
-            } else {
-              localStorage.removeItem('lion_remember_session');
-            }
+          if(!sess) return false;
+          var savedUser=JSON.parse(sess);
+          if(!savedUser||!savedUser.user) return false;
+          // Atualiza com dado live do db se disponível
+          var liveUser = (db&&db.users) ? db.users.find(function(u){return u.user===savedUser.user;}) : null;
+          var userObj = liveUser || savedUser;
+          if(userObj && userObj.status==='approved'){
+            session.user=userObj;
+            session.dashSc=userObj.role==='fin'?'fin':userObj.role==='cli'?'cli':'op';
+            // Esconde TODAS as telas e mostra só o app
+            document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+            document.getElementById('screen-app').classList.add('active');
+            if(typeof renderSidebar==='function') renderSidebar();
+            console.log('[AutoLogin] ✅',userObj.user);
+            return true;
+          } else {
+            localStorage.removeItem('lion_remember_session');
           }
         }catch(e){ localStorage.removeItem('lion_remember_session'); }
-        // No session — show login
-        if(typeof showLogin==='function') showLogin();
-      });
-      
-      // Safety: hide overlay after 5s even if Firebase fails
-      setTimeout(function(){
+        return false;
+      }
+
+      // Tenta login imediato (sem Firebase — usa objeto salvo)
+      var loggedIn = tryAutoLogin();
+
+      // Mostra overlay só se não logou ainda
+      var ov=document.getElementById('fb-loading');
+      var pr=document.getElementById('fb-progress');
+      if(!loggedIn){
+        if(ov) ov.style.display='flex';
+        if(pr){ setTimeout(function(){ pr.style.width='80%'; }, 100); }
+      }
+
+      window._fbLoad(function(loaded){
         if(ov) ov.style.display='none';
-      }, 5000);
+        if(loaded){
+          console.log('[FB] dados da nuvem carregados');
+          // Se já logado, atualiza dados do usuário com versão live
+          if(session.user){
+            var live=db.users.find(function(u){return u.user===session.user.user;});
+            if(live){ session.user=live; try{ localStorage.setItem('lion_remember_session', JSON.stringify(live)); }catch(e){} }
+            if(typeof renderSidebar==='function') renderSidebar();
+          } else {
+            // Tenta login de novo agora com Firebase carregado
+            if(!tryAutoLogin()){
+              if(typeof showLogin==='function') showLogin();
+            }
+          }
+        } else {
+          // Firebase falhou — se não logado, mostra login
+          if(!session.user){
+            if(typeof showLogin==='function') showLogin();
+          }
+        }
+        console.log('[FB] pronto, loaded='+loaded+', logado='+(!!session.user));
+      });
+
+      // Safety: esconde overlay após 5s
+      setTimeout(function(){ if(ov) ov.style.display='none'; if(!session.user&&typeof showLogin==='function') showLogin(); }, 5000);
     });
 
   })();
