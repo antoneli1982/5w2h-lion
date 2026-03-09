@@ -265,6 +265,139 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .modal-icon{font-size:38px;margin-bottom:10px}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 </style>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // ════════════════════════════════════════════════════
+    // CONFIGURAÇÃO FIREBASE — cole aqui as suas chaves
+    // Crie grátis em: console.firebase.google.com
+    // ════════════════════════════════════════════════════
+        // Firebase config — hardcoded (mesmo projeto para todos os apps)
+    let _savedCfg = {};
+    try { _savedCfg = JSON.parse(localStorage.getItem(window._DB_KEY + '_firebase_config') || '{}'); } catch(e) {}
+    const FIREBASE_CONFIG = {
+      apiKey:            _savedCfg.apiKey            || "AIzaSyBY5LeyMDQj28MJYbVHmtggtzzclGYgHCk",
+      authDomain:        _savedCfg.authDomain        || "w2h-lion.firebaseapp.com",
+      projectId:         _savedCfg.projectId         || "w2h-lion",
+      storageBucket:     _savedCfg.storageBucket     || "w2h-lion.firebasestorage.app",
+      messagingSenderId: _savedCfg.messagingSenderId || "611200932059",
+      appId:             _savedCfg.appId             || "1:611200932059:web:b110d1743f4c4755bed4fe"
+    };
+
+    let _db_fs = null;
+    let _doc_ref = null;
+
+    async function initFirebase(appId) {
+      try {
+        if (FIREBASE_CONFIG.apiKey === "COLE_AQUI") {
+          console.warn("[Firebase] Não configurado — usando apenas localStorage.");
+          return;
+        }
+        const app = initializeApp(FIREBASE_CONFIG, appId);
+        _db_fs = getFirestore(app);
+        _doc_ref = doc(_db_fs, "apps", appId);
+        console.log("[Firebase] Conectado ✅");
+
+        // Listen for real-time changes from other devices
+        onSnapshot(_doc_ref, (snap) => {
+          if (!snap.exists()) return;
+          const data = snap.data();
+          if (!data || !data.db) return;
+          // Merge remote into local
+          try {
+            const remote = JSON.parse(data.db);
+            if (remote && remote.users) {
+              // Only update if remote is newer
+              if (!db.lastSaved || remote.lastSaved > db.lastSaved) {
+                Object.assign(db, remote);
+                // Restore photos from remote
+                if (data.photos) {
+                  const ph = JSON.parse(data.photos);
+                  db.users.forEach(u => { if (ph[u.user]) u.photo = ph[u.user]; });
+                }
+                // Save to local cache
+                const clean = JSON.parse(JSON.stringify(db));
+                clean.users.forEach(u => delete u.photo);
+                localStorage.setItem(window._DB_KEY, JSON.stringify(clean));
+                if (data.photos) localStorage.setItem(window._PH_KEY, data.photos);
+                // Refresh UI if app is loaded
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof showDashboard === 'function' && session && session.user) showDashboard();
+                console.log("[Firebase] Sincronizado de outro dispositivo ✅");
+              }
+            }
+          } catch(e) { console.error("[Firebase] Sync error", e); }
+        });
+
+      } catch(e) {
+        console.warn("[Firebase] Erro ao conectar:", e.message);
+      }
+    }
+
+    async function cloudSave(dbKey, phKey, appId) {
+      if (!_doc_ref) return;
+      try {
+        const photos = localStorage.getItem(phKey) || '{}';
+        const clean  = JSON.parse(JSON.stringify(db));
+        clean.users.forEach(u => delete u.photo);
+        clean.lastSaved = Date.now();
+        db.lastSaved = clean.lastSaved;
+        await setDoc(_doc_ref, {
+          db:     JSON.stringify(clean),
+          photos: photos,
+          updated: new Date().toISOString()
+        });
+      } catch(e) { console.warn("[Firebase] Save error:", e.message); }
+    }
+
+    async function cloudLoad(dbKey, phKey) {
+      if (!_doc_ref) return false;
+      try {
+        const snap = await getDoc(_doc_ref);
+        if (!snap.exists()) return false;
+        const data = snap.data();
+        if (!data || !data.db) return false;
+        const remote = JSON.parse(data.db);
+        if (!remote || !remote.users) return false;
+        Object.assign(db, remote);
+        if (data.photos) {
+          const ph = JSON.parse(data.photos);
+          db.users.forEach(u => { if (ph[u.user]) u.photo = ph[u.user]; });
+          localStorage.setItem(phKey, data.photos);
+        }
+        const clean = JSON.parse(JSON.stringify(db));
+        clean.users.forEach(u => delete u.photo);
+        localStorage.setItem(dbKey, JSON.stringify(clean));
+        console.log("[Firebase] Carregado da nuvem ✅");
+        return true;
+      } catch(e) {
+        console.warn("[Firebase] Load error:", e.message);
+        return false;
+      }
+    }
+
+    // Expose to global scope
+    window._firebaseReady = false;
+    window._cloudSave = cloudSave;
+    window._cloudLoad = cloudLoad;
+
+    // Auto-init on load
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initFirebase(window._APP_ID || 'app');
+      window._firebaseReady = true;
+      // Try to load from cloud
+      const loaded = await cloudLoad(window._DB_KEY, window._PH_KEY);
+      if (loaded) {
+        // Re-initialize app with cloud data
+        if (typeof showLogin === 'function') showLogin();
+        else if (typeof showScreen === 'function') showScreen('screen-auth');
+      }
+      console.log("[Firebase] Pronto ✅");
+    });
+  </script>
+
 </head>
 <body>
 
@@ -375,7 +508,8 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           <span id="pending-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;border-radius:99px;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif"></span>
         </button>
       </div>
-            <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button onclick="openFirebaseConfig()" style="width:100%;background:var(--p2);color:#4ade80;border:1px solid #4ade8033;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;margin-bottom:6px;text-align:left" id="firebase-btn">☁️ Sincronização na Nuvem</button>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
         <button onclick="exportarDados()" style="flex:1;background:#2a1e00;color:#f5a800;border:1px solid #f5a80033;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">📤 Exportar</button>
         <button onclick="importarDados()" style="flex:1;background:#001a1a;color:#38d9d9;border:1px solid #38d9d933;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">📥 Importar</button>
       </div>
@@ -499,6 +633,8 @@ function saveDB(){
     const dbClean=JSON.parse(JSON.stringify(db));
     dbClean.users.forEach(u=>{delete u.photo;});
     localStorage.setItem('lion_db',JSON.stringify(dbClean));
+  // Cloud sync
+  if (window._cloudSave) window._cloudSave(DB_KEY, window._PH_KEY, window._APP_ID).catch(()=>{});
   }catch(e){
     console.error('saveDB error',e);
     // Try saving without photos at all as fallback
@@ -1634,6 +1770,9 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
 
   // ── SYNC CONSTANTS ──
   const DB_KEY = 'lion_db';
+  window._DB_KEY = 'lion_db';
+  window._PH_KEY = 'lion_photos';
+  window._APP_ID = 'lion_5w2h';
   const PH_KEY = 'lion_photos';
   const APP_ID = 'lion_5w2h';
 
@@ -1856,5 +1995,96 @@ async function epSendManual() {
 
 </script>
 
+
+  <!-- Modal Firebase Config -->
+  <div class="modal-overlay" id="modal-firebase" style="display:none">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-title">☁️ Sincronização na Nuvem</div>
+      <div class="modal-sub" style="font-size:11px;color:var(--gray);margin-bottom:16px;line-height:1.6">
+        Configure o Firebase para sincronizar dados entre celular, notebook e tablet.<br>
+        <strong style="color:#f5a800">Grátis</strong> até 50.000 leituras/dia · 20.000 gravações/dia
+      </div>
+      <div style="background:#0d1a00;border:1px solid #f5a80033;border-radius:8px;padding:12px;margin-bottom:16px;font-size:10px;color:var(--gray);line-height:1.8">
+        <strong style="color:#f5a800">Como configurar:</strong><br>
+        1. Acesse <a href="https://console.firebase.google.com" target="_blank" style="color:#f5a800">console.firebase.google.com</a><br>
+        2. Crie um projeto gratuito<br>
+        3. Clique em "Web" (&lt;/&gt;) para registrar o app<br>
+        4. Copie o objeto <code style="color:#f5a800">firebaseConfig</code><br>
+        5. Cole cada campo abaixo e salve
+      </div>
+      <div class="field"><label>API KEY</label><input id="fb-apikey" type="text" placeholder="AIzaSy..."></div>
+      <div class="field"><label>AUTH DOMAIN</label><input id="fb-auth" type="text" placeholder="projeto.firebaseapp.com"></div>
+      <div class="field"><label>PROJECT ID</label><input id="fb-proj" type="text" placeholder="meu-projeto-12345"></div>
+      <div class="field"><label>STORAGE BUCKET</label><input id="fb-bucket" type="text" placeholder="projeto.appspot.com"></div>
+      <div class="field"><label>MESSAGING SENDER ID</label><input id="fb-sender" type="text" placeholder="123456789"></div>
+      <div class="field"><label>APP ID</label><input id="fb-appid" type="text" placeholder="1:123456789:web:abc..."></div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="saveFirebaseConfig()" style="flex:1;background:#f5a800;color:#111;border:none;border-radius:8px;padding:10px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">💾 Salvar e Conectar</button>
+        <button onclick="closeModal('modal-firebase')" style="background:var(--p3);color:var(--gray);border:1px solid #ffffff15;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:Montserrat,sans-serif">Cancelar</button>
+      </div>
+      <div id="fb-status" style="margin-top:10px;font-size:11px;text-align:center;font-family:Montserrat,sans-serif"></div>
+    </div>
+  </div>
+
+  <script>
+  function openFirebaseConfig() {
+    // Load saved config
+    try {
+      const saved = JSON.parse(localStorage.getItem('lion_db_firebase_config') || '{}');
+      document.getElementById('fb-apikey').value  = saved.apiKey || '';
+      document.getElementById('fb-auth').value    = saved.authDomain || '';
+      document.getElementById('fb-proj').value    = saved.projectId || '';
+      document.getElementById('fb-bucket').value  = saved.storageBucket || '';
+      document.getElementById('fb-sender').value  = saved.messagingSenderId || '';
+      document.getElementById('fb-appid').value   = saved.appId || '';
+    } catch(e) {}
+    openModal('modal-firebase');
+  }
+
+  async function saveFirebaseConfig() {
+    const cfg = {
+      apiKey:            document.getElementById('fb-apikey').value.trim(),
+      authDomain:        document.getElementById('fb-auth').value.trim(),
+      projectId:         document.getElementById('fb-proj').value.trim(),
+      storageBucket:     document.getElementById('fb-bucket').value.trim(),
+      messagingSenderId: document.getElementById('fb-sender').value.trim(),
+      appId:             document.getElementById('fb-appid').value.trim(),
+    };
+    if (!cfg.apiKey || !cfg.projectId) {
+      document.getElementById('fb-status').style.color='#ef4444';
+      document.getElementById('fb-status').textContent='❌ Preencha ao menos API Key e Project ID.';
+      return;
+    }
+    localStorage.setItem('lion_db_firebase_config', JSON.stringify(cfg));
+    document.getElementById('fb-status').style.color='#f59e0b';
+    document.getElementById('fb-status').textContent='⏳ Conectando e fazendo upload dos dados...';
+    // Force page reload to re-init Firebase with new config
+    showToast('✅ Configuração salva! Recarregando...');
+    setTimeout(() => location.reload(), 1500);
+  }
+  </script>
+
+
+<script>
+// Show Firebase status in button
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const btn = document.getElementById('firebase-btn');
+    if (!btn) return;
+    try {
+      const cfg = JSON.parse(localStorage.getItem(window._DB_KEY + '_firebase_config') || '{}');
+      if (cfg.apiKey && cfg.apiKey !== 'COLE_AQUI') {
+        btn.style.color = '#4ade80';
+        btn.style.borderColor = '#4ade8033';
+        btn.textContent = '☁️ Nuvem: Conectado ✅';
+      } else {
+        btn.style.color = '#f59e0b';
+        btn.style.borderColor = '#f59e0b33';
+        btn.textContent = '☁️ Nuvem: Configurar';
+      }
+    } catch(e) {}
+  }, 1000);
+});
+</script>
 </body>
 </html>
