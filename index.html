@@ -1177,8 +1177,10 @@ function editCronCell(td,pid,gid,field){
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
   if(!row)return;
   const cur=row[field]||'';
+  const isDate=(field==='inicio'||field==='fim'||field==='when');
   const inp=document.createElement(field==='task'||field==='obs'?'textarea':'input');
-  inp.value=cur;
+  if(isDate){inp.type='date';const pts=cur?cur.split('/'):[];inp.value=pts.length===3?pts[2]+'-'+pts[1]+'-'+pts[0]:cur;}
+  else{inp.value=cur;}
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
@@ -1805,6 +1807,53 @@ async function _epSend(p) {
     showToast('📧 Notificação enviada para ' + p.emails.length + ' pessoa(s)');
   } catch(e) { console.error('[EP]', e); }
 }
+
+async function epSendManual() {
+  const p = db.projects.find(x => x.id === session.projId); if (!p) return;
+  const toVal  = (document.getElementById('ep-to')   ||{}).value || '__all__';
+  const subj   = ((document.getElementById('ep-subj')||{}).value||'').trim();
+  const msg    = ((document.getElementById('ep-msg') ||{}).value||'').trim();
+  const status = document.getElementById('ep-send-status');
+  if (!subj) { showToast('⚠️ Preencha o assunto!'); return; }
+  if (!msg)  { showToast('⚠️ Preencha a mensagem!'); return; }
+  const cfg = p.emailjsConfig || {};
+  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) {
+    showToast('⚠️ Configure o EmailJS primeiro! Clique em ⚙️ EmailJS'); return;
+  }
+  const targets = toVal === '__all__' ? (p.emails||[]) : [toVal];
+  if (!targets.length) { showToast('⚠️ Nenhum destinatário cadastrado!'); return; }
+  if (status) { status.textContent = '⏳ Enviando...'; status.style.color='#f59e0b'; }
+  try {
+    if (typeof emailjs === 'undefined') { showToast('❌ EmailJS não carregado!'); return; }
+    emailjs.init(cfg.publicKey);
+    const u = session.user && typeof session.user === 'object' ? session.user : db.users.find(x => x.user === session.user);
+    const nome = u ? u.nome : 'Sistema 5W2H';
+    let sent=0, failed=0;
+    for (const email of targets) {
+      try {
+        await emailjs.send(cfg.serviceId, cfg.templateId, {
+          to_email: email, to_name: email, from_name: nome,
+          projeto: p.name, assunto: subj, mensagem: msg, reply_to: email,
+        });
+        sent++;
+      } catch(e) { console.warn('[EP manual]', email, e); failed++; }
+    }
+    const ok = sent === targets.length;
+    if (status) {
+      status.textContent = ok ? ('✅ Enviado para '+sent+' pessoa(s)!') : ('⚠️ '+sent+' enviados, '+failed+' falha(s).');
+      status.style.color = ok ? '#4ade80' : '#f59e0b';
+    }
+    showToast(ok ? '🚀 Mensagem enviada!' : '⚠️ Envio parcial.');
+    if (ok) {
+      const ms = document.getElementById('ep-msg');  if(ms) ms.value='';
+      const ss = document.getElementById('ep-subj'); if(ss) ss.value='';
+    }
+  } catch(e) {
+    if (status) { status.textContent='❌ Erro. Verifique EmailJS.'; status.style.color='#ef4444'; }
+    showToast('❌ Erro ao enviar!'); console.error(e);
+  }
+}
+
 </script>
 
 </body>
