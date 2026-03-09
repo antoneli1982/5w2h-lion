@@ -185,6 +185,7 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 .view-tab{padding:8px 18px;font-size:12px;font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;background:var(--p3);color:var(--gray);transition:all .2s;border:none}
 .view-tab.active{background:#f5a80018;color:var(--green)}
 .view-tab.cron.active{background:#38bdf818;color:var(--sky)}
+.view-tab.email.active{background:#2a1e00;color:#f5a800}
 .stats-bar{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .stat-pill{background:var(--p2);border:1px solid #f5a80018;border-radius:10px;padding:9px 14px;text-align:center;min-width:85px}
 .stat-pill .v{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;line-height:1}
@@ -297,23 +298,28 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       <div class="field"><label>Confirmar Senha</label><input id="r-pass2" type="password" placeholder="Repita a senha"></div>
       <div class="field">
         <label>Perfil de Acesso</label>
-        <select id="r-role">
+        <select id="r-role" onchange="toggleClienteField()">
           <option value="op">🔵 Operacional – vê apenas projetos operacionais</option>
           <option value="fin">🟡 Financeiro – vê apenas projetos financeiros</option>
+          <option value="cli">🏢 Cliente – acessa projetos liberados pelo Sênior</option>
         </select>
       </div>
-      <div class="senior-note" id="senior-note">
-        👑 Para se cadastrar como Sênior, preencha abaixo e use a senha especial no campo de senha especial.
-      </div>
-      <div class="field" id="senior-special-field" style="display:none">
-        <label>Senha Especial Sênior</label>
-        <input id="r-special" type="password" placeholder="Senha especial fornecida pelo admin">
+      <div class="field" id="field-empresa" style="display:none">
+        <label>Nome da Empresa <span style="color:#f5a800;font-size:10px">* obrigatório para Cliente</span></label>
+        <input id="r-empresa" type="text" placeholder="Nome da empresa que você representa">
       </div>
       <div style="margin-bottom:10px">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gray);cursor:pointer">
           <input type="checkbox" id="r-is-senior" onchange="toggleSeniorField()" style="width:auto"> 
           Cadastrar como Sênior (acesso total)
         </label>
+      </div>
+      <div class="senior-note" id="senior-note" style="display:none">
+        👑 Você está se cadastrando como Sênior. Digite a senha especial abaixo para confirmar.
+      </div>
+      <div class="field" id="senior-special-field" style="display:none">
+        <label>Senha Especial Sênior</label>
+        <input id="r-special" type="password" placeholder="Digite a senha especial (fornecida pelo admin)">
       </div>
       <button class="btn-auth" onclick="doRegister()">CRIAR CONTA</button>
       <div class="auth-error" id="r-error"></div>
@@ -536,6 +542,16 @@ function toggleSeniorField(){
   document.getElementById('senior-special-field').style.display=chk?'block':'none';
   document.getElementById('senior-note').style.display=chk?'block':'none';
 }
+function toggleClienteField(){
+  const role=document.getElementById('r-role').value;
+  const isCli=role==='cli';
+  document.getElementById('field-empresa').style.display=isCli?'block':'none';
+  // Sênior checkbox não faz sentido para cliente
+  if(isCli){
+    document.getElementById('r-is-senior').checked=false;
+    toggleSeniorField();
+  }
+}
 function previewPhoto(input){
   if(!input.files||!input.files[0])return;
   const file=input.files[0];
@@ -569,10 +585,14 @@ function doRegister(){
   const hasPhoto = photo && photo.startsWith('data:');
   // Sênior aprovado automaticamente; todos os outros ficam PENDENTES até aprovação do Sênior
   const newStatus = finalRole==='senior'?'approved':'pending';
-  db.users.push({nome,user,pass,role:finalRole,photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
+  const empresa=document.getElementById('r-empresa')?document.getElementById('r-empresa').value.trim():'';
+  if(finalRole==='cli'&&!empresa){showErr(err,'Informe o nome da empresa para perfil Cliente.');return;}
+  db.users.push({nome,user,pass,role:finalRole,empresa:finalRole==='cli'?empresa:'',photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
   saveDB();
   // ── LIMPAR TODOS OS CAMPOS DO FORMULÁRIO APÓS CRIAR A CONTA ──
   document.getElementById('r-nome').value='';
+  if(document.getElementById('r-empresa'))document.getElementById('r-empresa').value='';
+  document.getElementById('field-empresa').style.display='none';
   document.getElementById('r-user').value='';
   document.getElementById('r-pass').value='';
   document.getElementById('r-pass2').value='';
@@ -596,7 +616,7 @@ function doRegister(){
   } else {
     ok.textContent='✅ Cadastro realizado! Aguarde a aprovação de um Sênior para acessar o sistema.';
   }
-  ok.style.display='block';
+  ok.style.display='block';showToast('✅ Conta criada! Aguarde aprovação do Sênior.');
   setTimeout(()=>{ ok.style.display='none'; switchAuthTab('login'); }, 2400);
 }
 function doLogin(){
@@ -792,6 +812,7 @@ function openProject(id,view){
     ?'<span class="topbar-badge badge-fin">💰 Financeiro</span>'
     :'<span class="topbar-badge badge-op">🔵 Operacional</span>';
   if(view==='gantt')renderGantt(p);
+  else if(view==='email')renderEmailView(p);
   else renderProject(p);
 }
 
@@ -808,6 +829,7 @@ function renderProject(p){
       <div class="view-tabs">
         <button class="view-tab active" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
         <button class="view-tab cron" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
+        ${session.user&&db.users.find(u=>u.user===session.user)?.role==='senior'?`<button class="view-tab email" onclick="openProject(${p.id},'email')">📧 E-mail</button>`:''}
       </div>
     </div>
     <div class="stats-bar">
@@ -826,84 +848,8 @@ function renderProject(p){
       <div class="legend" id="proj-leg"></div>
     </div>
 
-    <!-- ── PAINEL DE E-MAIL ──────────────────────────────── -->
-    <div id="email-panel" style="margin-top:20px;background:var(--p2);border-radius:14px;border:1px solid #f5a80022;padding:20px;display:${session.user&&db.users.find(u=>u.user===session.user)?.role==='senior'?'block':'none'}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <span style="font-size:18px">📧</span>
-        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800">NOTIFICAÇÕES POR E-MAIL</div>
-        <span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Somente Sênior</span>
-      </div>
 
-      <!-- Config EmailJS -->
-      <div id="emailjs-config-wrap" style="background:var(--p1);border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid #f5a80018">
-        <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px">⚙️ CONFIGURAÇÃO EMAILJS <span style="color:var(--gray);font-weight:400">(configure uma vez por projeto)</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div>
-            <label style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;display:block;margin-bottom:3px">Service ID</label>
-            <input id="ejs-service" type="text" placeholder="service_xxxxxxx"
-              value="${p.emailjsConfig?.serviceId||''}"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:7px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-          <div>
-            <label style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;display:block;margin-bottom:3px">Template ID</label>
-            <input id="ejs-template" type="text" placeholder="template_xxxxxxx"
-              value="${p.emailjsConfig?.templateId||''}"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:7px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-          <div>
-            <label style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;display:block;margin-bottom:3px">Public Key</label>
-            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxxxx"
-              value="${p.emailjsConfig?.publicKey||''}"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:7px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-        </div>
-      </div>
-
-      <!-- Lista de E-mails -->
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--gray2);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px">📋 DESTINATÁRIOS</div>
-        <div id="email-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-          ${(p.emails||[]).map((em,i)=>`
-            <div style="display:flex;align-items:center;gap:8px;background:var(--p1);border-radius:8px;padding:7px 10px;border:1px solid #f5a80015">
-              <span style="font-size:11px">📧</span>
-              <span style="flex:1;font-size:12px;color:var(--gray2);font-family:Montserrat,sans-serif">${em}</span>
-              <button onclick="removeEmail(${p.id},${i})" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:14px;padding:0 4px" title="Remover">✕</button>
-            </div>`).join('')}
-          ${(p.emails||[]).length===0?'<div style="color:var(--gray);font-size:11px;font-family:Montserrat,sans-serif;padding:6px">Nenhum e-mail cadastrado ainda.</div>':''}
-        </div>
-        <div style="display:flex;gap:8px">
-          <input id="new-email-input" type="email" placeholder="novo@email.com"
-            style="flex:1;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:8px;padding:8px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none"
-            onkeydown="if(event.key==='Enter')addEmailToProject(${p.id})">
-          <button onclick="addEmailToProject(${p.id})"
-            style="background:#2a1e00;color:#f5a800;border:1px solid #f5a80044;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap">
-            ➕ Adicionar
-          </button>
-        </div>
-      </div>
-
-      <!-- Campo de Mensagem -->
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:var(--gray2);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px">✉️ MENSAGEM</div>
-        <input id="email-assunto" type="text" placeholder="Assunto do e-mail..."
-          style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;margin-bottom:8px;box-sizing:border-box">
-        <textarea id="email-mensagem" rows="4" placeholder="Digite a mensagem para enviar a todos os destinatários..."
-          style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box"></textarea>
-      </div>
-
-      <!-- Botão Enviar -->
-      <div style="display:flex;align-items:center;gap:12px">
-        <button onclick="enviarNotificacao(${p.id})"
-          style="background:#f5a800;color:#fff;border:none;border-radius:10px;padding:11px 28px;font-size:13px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.5px;box-shadow:0 0 18px #f5a80044;transition:all .2s">
-          🚀 Enviar Notificação
-        </button>
-        <div id="email-status" style="font-size:11px;font-family:Montserrat,sans-serif;color:var(--gray)"></div>
-      </div>
-    </div>
-  </div>\`;
+  `;
   renderRows(p);buildLegend();
 }
 
@@ -1800,5 +1746,135 @@ async function enviarNotificacao(pid){
   }
 }
 </script>
+
+function renderEmailView(p){
+  const u=db.users.find(x=>x.user===session.user);
+  if(!u||u.role!=='senior'){
+    document.getElementById('main-content').innerHTML=`
+      <div class="fade-in content" style="text-align:center;padding:60px 20px">
+        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <div style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:800;color:var(--gray2)">Acesso restrito ao Sênior</div>
+        <div style="color:var(--gray);font-size:13px;margin-top:8px">Somente o Sênior pode gerenciar notificações por e-mail.</div>
+      </div>`;
+    return;
+  }
+
+  if(!p.emailjsConfig)p.emailjsConfig={serviceId:'',templateId:'',publicKey:''};
+  if(!p.emails)p.emails=[];
+
+  document.getElementById('main-content').innerHTML=`
+  <div class="fade-in">
+    <div class="view-header">
+      <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+      <div class="view-title">${p.name}</div>
+      <div class="view-tabs">
+        <button class="view-tab" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
+        <button class="view-tab cron" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
+        <button class="view-tab email active" onclick="openProject(${p.id},'email')">📧 E-mail</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- ── GUIA EMAILJS ───────────────────────────────────────── -->
+      <div style="background:#2a1e00;border:1px solid #f5a80033;border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;margin-bottom:10px">⚙️ COMO CONFIGURAR O EMAILJS (GRATUITO)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+          <div style="background:var(--p2);border-radius:8px;padding:10px">
+            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">① Criar conta</div>
+            <div style="color:var(--gray);font-size:10px">Acesse <a href="https://www.emailjs.com" target="_blank" style="color:#f5a800">emailjs.com</a> → Sign Up grátis</div>
+          </div>
+          <div style="background:var(--p2);border-radius:8px;padding:10px">
+            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">② Email Service</div>
+            <div style="color:var(--gray);font-size:10px">Add New Service → Gmail ou Outlook → copie o <b style="color:var(--gray2)">Service ID</b></div>
+          </div>
+          <div style="background:var(--p2);border-radius:8px;padding:10px">
+            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">③ Email Template</div>
+            <div style="color:var(--gray);font-size:10px">Create Template → use variáveis:<br><span style="color:var(--gray2);font-size:9px">{{to_email}} {{assunto}} {{mensagem}} {{from_name}} {{project}}</span><br>Copie o <b style="color:var(--gray2)">Template ID</b></div>
+          </div>
+          <div style="background:var(--p2);border-radius:8px;padding:10px">
+            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">④ Public Key</div>
+            <div style="color:var(--gray);font-size:10px">Account → General → copie sua <b style="color:var(--gray2)">Public Key</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONFIG EMAILJS ─────────────────────────────────────── -->
+      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">🔑 CONFIGURAÇÃO EMAILJS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Service ID</label>
+            <input id="ejs-service" type="text" placeholder="service_xxxxxxx" value="${p.emailjsConfig.serviceId}"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(${p.id})">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Template ID</label>
+            <input id="ejs-template" type="text" placeholder="template_xxxxxxx" value="${p.emailjsConfig.templateId}"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(${p.id})">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Public Key</label>
+            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx" value="${p.emailjsConfig.publicKey}"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
+              oninput="saveEmailjsConfig(${p.id})">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DESTINATÁRIOS ──────────────────────────────────────── -->
+      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">📋 DESTINATÁRIOS <span style="font-size:11px;color:var(--gray);font-weight:400">(${(p.emails||[]).length} cadastrado(s))</span></div>
+        <div id="email-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+          ${(p.emails||[]).length===0
+            ? '<div style="color:var(--gray);font-size:12px;font-family:Montserrat,sans-serif;padding:10px;background:var(--p3);border-radius:8px;text-align:center">Nenhum e-mail cadastrado. Adicione abaixo. ↓</div>'
+            : (p.emails||[]).map((em,i)=>`
+              <div style="display:flex;align-items:center;gap:10px;background:var(--p3);border-radius:8px;padding:9px 12px;border:1px solid #f5a80015">
+                <span style="font-size:14px">📧</span>
+                <span style="flex:1;font-size:12px;color:var(--gray2);font-family:Montserrat,sans-serif">${em}</span>
+                <button onclick="removeEmail(${p.id},${i})" style="background:#2a0808;color:#ef4444;border:1px solid #ef444433;border-radius:6px;font-size:11px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">✕ Remover</button>
+              </div>`).join('')
+          }
+        </div>
+        <div style="display:flex;gap:8px">
+          <input id="new-email-input" type="email" placeholder="Digite o e-mail e pressione Enter ou clique em Adicionar"
+            style="flex:1;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none"
+            onkeydown="if(event.key==='Enter')addEmailToProject(${p.id})">
+          <button onclick="addEmailToProject(${p.id})"
+            style="background:#2a1e00;color:#f5a800;border:1.5px solid #f5a80044;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap">
+            ➕ Adicionar
+          </button>
+        </div>
+      </div>
+
+      <!-- ── COMPOR MENSAGEM ────────────────────────────────────── -->
+      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">✉️ COMPOR MENSAGEM</div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Assunto</label>
+          <input id="email-assunto" type="text" placeholder="Ex: Atualização do projeto ${p.name}"
+            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Mensagem</label>
+          <textarea id="email-mensagem" rows="5" placeholder="Digite aqui a mensagem completa que será enviada para todos os destinatários..."
+            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        </div>
+      </div>
+
+      <!-- ── ENVIAR ─────────────────────────────────────────────── -->
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button onclick="enviarNotificacao(${p.id})"
+          style="background:#f5a800;color:#111;border:none;border-radius:10px;padding:13px 32px;font-size:14px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.5px;box-shadow:0 0 22px #f5a80044;transition:all .2s">
+          🚀 Enviar Notificação
+        </button>
+        <div id="email-status" style="font-size:12px;font-family:Montserrat,sans-serif;color:var(--gray)"></div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
 </body>
 </html>
