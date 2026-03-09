@@ -1795,7 +1795,7 @@ async function _epSend(p) {
       try {
         await emailjs.send(cfg.serviceId, cfg.templateId, {
           to_email: email, to_name: email, from_name: nome,
-          project: p.name,
+          projeto: p.name,
           assunto: 'Atualização: ' + p.name,
           mensagem: 'O projeto "' + p.name + '" foi atualizado por ' + nome + '. Acesse para ver as mudanças.',
           reply_to: email,
