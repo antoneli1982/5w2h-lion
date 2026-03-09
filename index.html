@@ -15,13 +15,13 @@
   --danger:#ef4444;--warn:#f59e0b;--purple:#a78bfa;--sky:#38bdf8;
   --success:#4ade80;
 }
-body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:var(--white)}
+body{font-family:'Inter',sans-serif;background:var(--p4);color:var(--white)}
 ::-webkit-scrollbar{width:5px;height:5px;background:var(--p3)}
 ::-webkit-scrollbar-thumb{background:var(--green);border-radius:3px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
 .fade-in{animation:fadeIn .3s ease forwards}
-.screen{display:none;min-height:100vh}
+.screen{display:none}
 .screen.active{display:flex}
 
 
@@ -100,7 +100,7 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 .sidebar{
   width:255px;min-width:255px;background:var(--p2);
   border-right:1px solid #f5a80015;display:flex;flex-direction:column;
-  height:100vh;position:sticky;top:0;overflow-y:auto;
+  position:sticky;top:0;overflow-y:auto;
 }
 .sidebar-logo{padding:14px 18px 12px;border-bottom:1px solid #f5a80015;display:flex;flex-direction:column;align-items:center;gap:8px}
 .sidebar-logo .logo-row{display:flex;justify-content:center}.sidebar-logo .logo-lion{height:34px;object-fit:contain}.sidebar-logo .logo-uni{height:32px;object-fit:contain;border-radius:5px;padding:2px 5px;background:rgba(255,255,255,0.08)}
@@ -132,7 +132,7 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 .btn-logout:hover{border-color:var(--danger);color:var(--danger)}
 
 /* ── MAIN ── */
-.main{flex:1;overflow-y:auto;min-height:100vh}
+.main{flex:1;overflow-y:auto;min-height:0}
 .topbar{background:var(--p2);border-bottom:1px solid #f5a80015;padding:13px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
 .topbar-title{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:800;flex:1}
 .topbar-badge{padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;letter-spacing:.5px}
@@ -280,161 +280,182 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 ══════════════════════════════════════════════════════════ */
 
 /* ══ TABLET (≤1024px) ══ */
+
+/* ════════════════════════════════════════
+   TABLET  ≤ 1024px
+════════════════════════════════════════ */
 @media (max-width:1024px){
-  .sidebar{ width:210px; min-width:210px; }
-  table{ min-width:750px; }
+  .sidebar{ width:200px; min-width:200px; }
+  table{ min-width:700px; }
+  .dash-grid{ grid-template-columns:repeat(2,1fr) !important; }
 }
 
-/* ══ CELULAR (≤767px) ══ */
+/* ════════════════════════════════════════
+   CELULAR  ≤ 767px
+════════════════════════════════════════ */
 @media (max-width:767px){
 
-  /* Layout: sidebar vai para baixo */
-  #screen-app{ flex-direction:column !important; }
+  html, body { height:100%; overflow:hidden; }
 
-  /* Área principal ocupa o espaço e deixa espaço pro menu */
+  /* Tela app: coluna, ocupa tudo */
+  #screen-app {
+    flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  /* Conteúdo principal: scrollável, espaço pra barra */
   .main {
-    flex:1 1 auto !important;
-    overflow-y:auto !important;
-    padding-bottom:70px !important;
-    min-height:0 !important;
+    flex: 1 1 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 0 !important;
+    padding-bottom: 70px !important;
   }
 
-  /* Sidebar vira barra na base */
-  .sidebar{
-    order:99;
-    width:100% !important;
-    min-width:unset !important;
-    height:56px !important;
-    min-height:56px !important;
-    max-height:56px !important;
-    position:fixed !important;
-    bottom:0 !important;
-    left:0 !important;
-    right:0 !important;
-    top:auto !important;
-    z-index:1000;
-    flex-direction:row !important;
-    overflow-x:auto !important;
-    overflow-y:hidden !important;
-    border-right:none !important;
-    border-top:1px solid rgba(255,255,255,0.1) !important;
-    padding:0 6px !important;
-    align-items:center !important;
-    gap:6px !important;
-    -webkit-overflow-scrolling:touch;
+  /* Sidebar → barra inferior */
+  .sidebar {
+    order: 10 !important;
+    width: 100% !important;
+    min-width: unset !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    position: relative !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border-right: none !important;
+    border-top: 1px solid rgba(255,255,255,.12) !important;
+    padding: 0 8px !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    -webkit-overflow-scrolling: touch;
   }
+  .sidebar::-webkit-scrollbar { display:none; }
 
-  /* Esconde elementos pesados da sidebar */
-  .sidebar-logo { display:none !important; }
-  .sidebar-section-title { display:none !important; }
-  #s-name { display:none !important; }
-  #s-role { display:none !important; }
+  /* Esconde logo e labels */
+  .sidebar-logo,
+  .sidebar-section-title,
+  #s-name, #s-role { display:none !important; }
 
   /* Avatar compacto */
-  .sidebar-user{
-    flex-direction:row !important;
-    align-items:center !important;
-    padding:0 6px !important;
-    border-bottom:none !important;
-    border-right:1px solid rgba(255,255,255,0.1) !important;
-    flex-shrink:0 !important;
-    height:100% !important;
+  .sidebar-user {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 0 8px 0 2px !important;
+    border-bottom: none !important;
+    border-right: 1px solid rgba(255,255,255,.12) !important;
+    flex-shrink: 0 !important;
+    height: 100% !important;
+    gap: 6px !important;
   }
-  .user-avatar{
-    width:30px !important;
-    height:30px !important;
-    font-size:11px !important;
-  }
-
-  /* Menu horizontal com scroll */
-  .sidebar-menu{
-    display:flex !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    flex:1 !important;
-    overflow-x:auto !important;
-    gap:4px !important;
-    padding:4px 0 !important;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .sidebar-menu::-webkit-scrollbar{ display:none; }
-
-  .menu-item{
-    white-space:nowrap !important;
-    font-size:10px !important;
-    padding:5px 12px !important;
-    border-radius:20px !important;
-    flex-shrink:0 !important;
+  .user-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12px !important;
   }
 
-  /* Botões do rodapé da sidebar */
-  .sidebar-bottom{
-    display:flex !important;
-    flex-direction:row !important;
-    gap:3px !important;
-    flex-shrink:0 !important;
-    padding:0 4px !important;
+  /* Menu: botões em linha */
+  .sidebar-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex: 1 !important;
+    overflow-x: auto !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
-  .sidebar-bottom button{
-    font-size:8px !important;
-    padding:4px 6px !important;
-    white-space:nowrap;
+  .sidebar-menu::-webkit-scrollbar { display:none; }
+  .menu-item {
+    white-space: nowrap !important;
+    font-size: 10px !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Botões do rodapé (Exportar, Importar, Sair…) */
+  .sidebar-bottom {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+  }
+  .sidebar-bottom button,
+  .sidebar-bottom a {
+    font-size: 8px !important;
+    padding: 4px 7px !important;
+    white-space: nowrap !important;
   }
 
   /* Auth */
-  .auth-card{
-    width:95% !important;
-    padding:20px 14px !important;
-    margin:10px auto !important;
+  .auth-card {
+    width: 96% !important;
+    padding: 20px 14px !important;
+    margin: 10px auto !important;
   }
-  .auth-logo img{ max-height:50px !important; }
+  .auth-logo img { max-height: 48px !important; }
 
   /* Topbar */
-  .topbar{ padding:8px 10px !important; flex-wrap:wrap; gap:4px; }
-  #tb-title{ font-size:13px !important; }
-  .view-tab{ font-size:9px !important; padding:4px 8px !important; }
-
-  /* Tabela */
-  .table-wrap{
-    overflow-x:auto !important;
-    -webkit-overflow-scrolling:touch;
+  .topbar {
+    padding: 8px 12px !important;
+    flex-wrap: wrap;
+    gap: 4px;
   }
-  table{ min-width:620px !important; }
-  th{ font-size:9px !important; padding:6px 5px !important; }
-  td{ font-size:10px !important; padding:5px 5px !important; }
+  #tb-title { font-size: 13px !important; }
+  .view-tab { font-size: 9px !important; padding: 4px 8px !important; }
 
-  /* Gantt */
-  .gantt-wrap, .cron-wrap{
-    overflow-x:auto !important;
-    -webkit-overflow-scrolling:touch;
+  /* Tabela scroll */
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { min-width: 620px !important; }
+  th { font-size: 9px !important; padding: 6px 5px !important; }
+  td { font-size: 10px !important; padding: 5px 5px !important; }
+
+  /* Gantt scroll */
+  .gantt-wrap, .cron-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Email painel */
-  #ep-body-cols{ grid-template-columns:1fr !important; }
-  #ep-body-cols > div:first-child{
-    border-right:none !important;
-    border-bottom:1px solid rgba(255,255,255,0.1) !important;
+  /* Email painel: 1 coluna */
+  #ep-body-cols { grid-template-columns: 1fr !important; }
+  #ep-body-cols > div:first-child {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255,255,255,.1) !important;
   }
 
   /* Modal */
-  .modal{
-    width:97% !important;
-    max-width:100% !important;
-    max-height:90vh !important;
-    margin:0 auto !important;
+  .modal {
+    width: 97% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    margin: 0 auto !important;
   }
 
-  /* Dashboard */
-  .dash-grid{ grid-template-columns:1fr 1fr !important; }
+  /* Dashboard grid */
+  .dash-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Stats */
+  .stats-bar { flex-wrap: wrap; gap: 6px; }
+  .stat-pill { min-width: 70px !important; padding: 6px 8px !important; }
 }
 
-/* ══ CELULAR PEQUENO (≤400px) ══ */
+/* ════════════════════════════════════════
+   CELULAR PEQUENO  ≤ 400px
+════════════════════════════════════════ */
 @media (max-width:400px){
-  .auth-card{ padding:16px 12px !important; }
-  th{ font-size:8px !important; }
-  td{ font-size:9px !important; }
-  .menu-item{ font-size:9px !important; padding:4px 9px !important; }
+  .auth-card { padding:16px 10px !important; }
+  th { font-size:8px !important; }
+  td { font-size:9px !important; }
+  .menu-item { font-size:9px !important; padding:5px 9px !important; }
+  .stat-pill { min-width:60px !important; }
 }
 
 </style>
@@ -559,7 +580,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           var userObj = liveUser || savedUser;
           if(userObj && userObj.status==='approved'){
             session.user=userObj;
-            session.dashSc=userObj.role==='fin'?'fin':userObj.role==='cli'?'cli':'op';
+            session.dashSc=userObj.role==='cli'?'cli':'op';
             // Esconde TODAS as telas e mostra só o app
             document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
             document.getElementById('screen-app').classList.add('active');
@@ -658,7 +679,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
         <label>Perfil de Acesso</label>
         <select id="r-role" onchange="toggleClienteField()">
           <option value="op">🔵 Operacional – vê apenas projetos operacionais</option>
-          <option value="fin">🟡 Financeiro – vê apenas projetos financeiros</option>
           <option value="cli">🏢 Cliente – acessa projetos liberados pelo Sênior</option>
         </select>
       </div>
@@ -761,7 +781,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     <div class="field"><label>Cenário</label>
       <select id="np-sc">
         <option value="op">🔵 Operacional</option>
-        <option value="fin">🟡 Financeiro</option>
       </select>
     </div>
     <div class="modal-btns">
@@ -833,8 +852,8 @@ let db = {
       {id:1,task:'Reunião de alinhamento',week:'S1',start:'2026-03-10',end:'2026-03-10',resp:'João Rosalvo',obs:'Presencial sala 2',status:100,color:'#f5a800'},
       {id:2,task:'Implantação da comunicação',week:'S2',start:'2026-03-11',end:'2026-03-20',resp:'João Rosalvo',obs:'',status:25,color:'#38bdf8'},
     ]},
-    {id:2,name:'Controle de Custos Q2',sc:'fin',allowedUsers:'all',rows:[
-      {id:1,acao:'Revisão de Fornecedores',what:'Auditar contratos acima de R$10k.',why:'Reduzir custos em 15%.',where:'Financeiro',when:'30/03/2026',who:'Ana Lima',how:'Renegociar contratos.',howMuch:'10h analista',status:50},
+    {id:2,name:'Controle de Custos Q2',sc:'op',allowedUsers:'all',rows:[
+      {id:1,acao:'Revisão de Fornecedores',what:'Auditar contratos acima de R$10k.',why:'Reduzir custos em 15%.',where:'Controladoria',when:'30/03/2026',who:'Ana Lima',how:'Renegociar contratos.',howMuch:'10h analista',status:50},
     ],gantt:[
       {id:1,task:'Levantamento de contratos',week:'S1',start:'2026-03-08',end:'2026-03-15',resp:'Ana Lima',obs:'Contratos acima de R$10k',status:50,color:'#f59e0b'},
       {id:2,task:'Reunião com fornecedores',week:'S3',start:'2026-03-18',end:'2026-03-25',resp:'Ana Lima',obs:'',status:0,color:'#a78bfa'},
@@ -1011,7 +1030,7 @@ function doLogin(){
     localStorage.removeItem('lion_remember');
   }
   session.user=found;
-  session.dashSc=found.role==='fin'?'fin':'op';
+  session.dashSc='op';
   // Auto-session: save logged user so page refresh keeps session
   try{ localStorage.setItem('lion_remember_session', JSON.stringify(found)); }catch(e){}
   // update sidebar
@@ -1024,7 +1043,7 @@ function doLogin(){
   }
   document.getElementById('s-name').textContent=found.nome;
   const roleEl=document.getElementById('s-role');
-  roleEl.textContent=found.role==='senior'?'👑 Sênior':found.role==='fin'?'💰 Financeiro':'🔵 Operacional';
+  roleEl.textContent=found.role==='senior'?'👑 Sênior':'🔵 Operacional';
   roleEl.className='user-role role-'+found.role;
   showScreen('screen-app');
   // Show senior panel button if senior
@@ -1092,7 +1111,6 @@ function showDashboard(){
   const tabsHTML=isSenior?`
     <div class="scenario-tabs">
       <div class="sc-tab op ${session.dashSc==='op'?'active':''}" onclick="session.dashSc='op';showDashboard()">🔵 Operacional</div>
-      <div class="sc-tab fin ${session.dashSc==='fin'?'active':''}" onclick="session.dashSc='fin';showDashboard()">💰 Financeiro</div>
     </div>`:'';
 
   const dispSc=isSenior?session.dashSc:session.user.role;
@@ -1107,7 +1125,7 @@ function showDashboard(){
     </div>
     ${tabsHTML}
     <div class="section-header">
-      <div class="section-title">📁 Projetos ${dispSc==='op'?'Operacionais':'Financeiros'}</div>
+      <div class="section-title">📁 Projetos ${'Operacionais'}</div>
       <button class="btn-primary" onclick="openModal('modal-new-proj')">➕ Novo Projeto</button>
     </div>
     <div class="projects-grid">
@@ -1122,9 +1140,9 @@ function showDashboard(){
 function projCardHTML(p){
   const t=p.rows.length,d=p.rows.filter(r=>r.status===100).length;
   const avg=t?Math.round(p.rows.reduce((a,r)=>a+r.status,0)/t):0;
-  const isFin=p.sc==='fin';
+  const isFin=false;
   const barColor=isFin?'var(--warn)':'var(--green)';
-  const badge=isFin?'<span class="sc-label sc-fin">💰 Financeiro</span>':'<span class="sc-label sc-op">🔵 Operacional</span>';
+  const badge='<span class="sc-label sc-op">🔵 Operacional</span>';
   const delBtn=session.user.role==='senior'?`<button class="pc-del-btn" title="Excluir" onclick="event.stopPropagation();askDelProj(${p.id})">🗑️</button>`:'';
   return`<div class="project-card ${isFin?'fin':''}" onclick="openProject(${p.id},'5w2h')">
     <div class="pc-header"><div class="pc-name">${p.name}</div>${delBtn}${badge}</div>
@@ -1142,7 +1160,7 @@ function renderSidebar(){
   const projs=visibleProjects();
   document.getElementById('sidebar-projs').innerHTML=projs.map(p=>`
     <div class="menu-item proj-menu-item" id="mi-p${p.id}" onclick="openProject(${p.id},'5w2h')">
-      <span class="proj-dot" style="background:${p.sc==='fin'?'var(--warn)':'var(--green)'}"></span>
+      <span class="proj-dot" style="background:${'var(--green)'}"></span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
       <span class="mbadge">${p.rows.length}</span>
     </div>`).join('');
@@ -1187,9 +1205,7 @@ function openProject(id,view){
   setActive('mi-p'+id);renderSidebar();
   document.getElementById('tb-title').textContent=p.name;
 
-  document.getElementById('tb-badge').innerHTML=p.sc==='fin'
-    ?'<span class="topbar-badge badge-fin">💰 Financeiro</span>'
-    :'<span class="topbar-badge badge-op">🔵 Operacional</span>';
+  document.getElementById('tb-badge').innerHTML='<span class="topbar-badge badge-op">🔵 Operacional</span>';
   if(view==='gantt')renderGantt(p);
   else renderProject(p);
 }
@@ -1342,7 +1358,28 @@ function renderProject(p){
 function renderRows(p){
   const tbody=document.getElementById('proj-tbody');if(!tbody)return;
   tbody.innerHTML='';
-  p.rows.forEach(row=>{
+  // Mostrar dados de exemplo se projeto vazio
+  var displayRows = p.rows.length > 0 ? p.rows : [
+    {id:1,what:'Exemplo: Reduzir retrabalho',why:'Melhorar qualidade do processo',where:'Produção',when:'01/04/2026',who:'João Silva',how:'Implementar checklist de qualidade',howmuch:'R$ 500,00',status:0},
+    {id:2,what:'Treinamento da equipe',why:'Capacitar colaboradores',where:'Sala de treinamento',when:'15/04/2026',who:'Maria Souza',how:'Contratar instrutor externo',howmuch:'R$ 1.200,00',status:25},
+    {id:3,what:'Manutenção preventiva',why:'Evitar paradas não planejadas',where:'Linha de produção',when:'30/04/2026',who:'Carlos Lima',how:'Seguir plano de manutenção',howmuch:'R$ 800,00',status:50}
+  ];
+  var isDemo = p.rows.length === 0;
+  if(isDemo){
+    var demoBar = document.getElementById('proj-demo-bar');
+    if(!demoBar){
+      var bar = document.createElement('div');
+      bar.id='proj-demo-bar';
+      bar.style.cssText='background:#1a1200;border:1px solid #f5a80033;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:11px;color:#f5a800;font-family:Montserrat,sans-serif;display:flex;align-items:center;gap:8px';
+      bar.innerHTML='<span style="font-size:14px">💡</span><span><b>Dados de exemplo</b> — Clique em <b>+ Nova Linha</b> para começar!</span>';
+      var tableWrap = document.querySelector('.table-wrap');
+      if(tableWrap) tableWrap.parentNode.insertBefore(bar, tableWrap);
+    }
+  } else {
+    var demoBar = document.getElementById('proj-demo-bar');
+    if(demoBar) demoBar.remove();
+  }
+  displayRows.forEach(row=>{
     const tr=document.createElement('tr');
     FIELDS.forEach(f=>{
       const td=document.createElement('td');td.className='editable';
@@ -1507,6 +1544,29 @@ function calcCronProgress(p){
 function renderCronRows(p){
   const tbody=document.getElementById('cron-tbody');
   if(!tbody)return;
+  // Mostrar dados de exemplo se cronograma vazio
+  var isGanttDemo = !p.gantt || p.gantt.length === 0;
+  if(isGanttDemo){
+    var originalGantt = p.gantt;
+    p = Object.assign({}, p, {gantt: [
+    {id:1,desc:'Levantamento de requisitos',semana:'1',inicio:'01/04/2026',fim:'07/04/2026',status:'Em andamento',resp:'João Silva',obs:'Reunião com stakeholders'},
+    {id:2,desc:'Planejamento e cronograma',semana:'2',inicio:'08/04/2026',fim:'14/04/2026',status:'Não iniciado',resp:'Maria Souza',obs:''},
+    {id:3,desc:'Execução das ações',semana:'3-4',inicio:'15/04/2026',fim:'28/04/2026',status:'Não iniciado',resp:'Carlos Lima',obs:'Ver relatório anterior'},
+    {id:4,desc:'Revisão e ajustes finais',semana:'5',inicio:'29/04/2026',fim:'05/05/2026',status:'Não iniciado',resp:'João Silva',obs:''}
+  ]});
+    var demoBarC = document.getElementById('cron-demo-bar');
+    if(!demoBarC){
+      var bc = document.createElement('div');
+      bc.id='cron-demo-bar';
+      bc.style.cssText='background:#1a1200;border:1px solid #f5a80033;border-radius:8px;padding:8px 14px;margin:0 18px 10px;font-size:11px;color:#f5a800;font-family:Montserrat,sans-serif;display:flex;align-items:center;gap:8px';
+      bc.innerHTML='<span style="font-size:14px">💡</span><span><b>Dados de exemplo</b> — Clique em <b>➕ Adicionar Item</b> para começar!</span>';
+      var cronWrap = document.querySelector('.gantt-wrap');
+      if(cronWrap){ var toolbar=cronWrap.querySelector('.gantt-toolbar'); if(toolbar) toolbar.after(bc); }
+    }
+  } else {
+    var demoBarC = document.getElementById('cron-demo-bar');
+    if(demoBarC) demoBarC.remove();
+  }
   const avg=calcCronProgress(p);
   // update progress bar
   const pa=document.getElementById('cron-progress-area');
@@ -1662,7 +1722,7 @@ function spRenderPending(){
       <div style="width:36px;height:36px;border-radius:50%;background:#2a1f00;border:2px solid var(--warn);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--warn);flex-shrink:0">${u.nome.charAt(0).toUpperCase()}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:#fff">${u.nome}</div>
-        <div style="font-size:10px;color:var(--gray)">@${u.user} · ${u.role==='op'?'🔵 Operacional':'💰 Financeiro'} · <span style="color:var(--warn)">⏳ Aguardando</span></div>
+        <div style="font-size:10px;color:var(--gray)">@${u.user} · ${'🔵 Operacional'} · <span style="color:var(--warn)">⏳ Aguardando</span></div>
       </div>
       <div style="display:flex;gap:6px">
         <button onclick="approveUser('${u.user}')" style="background:#1a1400;color:#4ade80;border:1px solid #4ade8044;border-radius:7px;padding:6px 13px;font-size:11px;font-weight:700;cursor:pointer">✅ Aprovar</button>
@@ -1685,7 +1745,7 @@ function spRenderApproved(){
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:#fff">${u.nome}</div>
-        <div style="font-size:10px;color:var(--gray)">@${u.user} · ${u.role==='op'?'🔵 Operacional':'💰 Financeiro'} · <span style="color:#4ade80">✅ Aprovado</span></div>
+        <div style="font-size:10px;color:var(--gray)">@${u.user} · ${'🔵 Operacional'} · <span style="color:#4ade80">✅ Aprovado</span></div>
       </div>
       <button onclick="rejectUser('${u.user}',true)" style="background:#1a0000;color:var(--danger);border:1px solid #ef444433;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer" title="Revogar acesso">🚫 Revogar</button>
     </div>`).join('');
@@ -1703,12 +1763,12 @@ function spRenderProjects(){
     const relevantUsers=users.filter(u=>u.role===p.sc);
     if(!relevantUsers.length)return `
       <div style="background:var(--p3);border:1px solid #f5a80015;border-radius:10px;padding:13px 15px;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">${p.sc==='fin'?'💰':'🔵'} ${p.name}</div>
-        <div style="font-size:11px;color:var(--gray)">Nenhum usuário ${p.sc==='op'?'operacional':'financeiro'} aprovado.</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">${'🔵'} ${p.name}</div>
+        <div style="font-size:11px;color:var(--gray)">Nenhum usuário ${'operacional'} aprovado.</div>
       </div>`;
     return `
       <div style="background:var(--p3);border:1px solid #f5a80018;border-radius:10px;padding:13px 15px;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:10px;font-family:Montserrat,sans-serif">${p.sc==='fin'?'💰':'🔵'} ${p.name}</div>
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:10px;font-family:Montserrat,sans-serif">${'🔵'} ${p.name}</div>
         ${relevantUsers.map(u=>{
           const hasAccess=p.allowedUsers==='all'||(Array.isArray(p.allowedUsers)&&p.allowedUsers.includes(u.user));
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5a80010">
@@ -1774,7 +1834,7 @@ function spRenderAll(){
   const statusColor={'approved':'#4ade80','pending':'var(--warn)','rejected':'var(--danger)'};
   const statusLabel={'approved':'✅ Aprovado','pending':'⏳ Aguardando','rejected':'❌ Reprovado'};
   const opUsers=all.filter(u=>u.role==='op');
-  const finUsers=all.filter(u=>u.role==='fin');
+  const finUsers=[];
   function renderTable(users,sectionLabel,color,icon){
     if(!users.length)return`<div style="background:var(--p3);border:1px solid ${color}22;border-radius:12px;padding:14px 18px;margin-bottom:18px"><div style="font-size:13px;font-weight:800;color:${color};font-family:Montserrat,sans-serif;margin-bottom:8px">${icon} ${sectionLabel} <span style="font-size:11px;color:var(--gray);font-weight:400">(0 colaboradores)</span></div><div style="font-size:11px;color:var(--gray);padding:6px 0">Nenhum colaborador neste perfil.</div></div>`;
     let rows=users.map((u,i)=>{
@@ -1786,7 +1846,7 @@ function spRenderAll(){
     }).join('');
     return `<div style="background:var(--p3);border:1px solid ${color}33;border-radius:12px;padding:16px 18px;margin-bottom:18px"><div style="font-size:13px;font-weight:800;color:${color};font-family:Montserrat,sans-serif;margin-bottom:14px">${icon} ${sectionLabel} <span style="font-size:11px;color:var(--gray);font-weight:400">(${users.length} colaborador${users.length>1?'es':''})</span></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1.5px solid ${color}44"><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">FOTO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">NOME</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">USUÁRIO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">STATUS</th><th style="text-align:center;padding:6px 10px;color:${color};font-weight:700">AÇÕES</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
-  el.innerHTML=`<div style="font-size:11px;color:var(--gray);margin-bottom:14px;padding:0 2px">Total geral: <b style="color:#fff">${all.length}</b> colaborador${all.length>1?'es':''} cadastrado${all.length>1?'s':''}</div>${renderTable(opUsers,'Operacional','#60a5fa','🔵')}${renderTable(finUsers,'Financeiro','#f5a800','💰')}`;
+  el.innerHTML=`<div style="font-size:11px;color:var(--gray);margin-bottom:14px;padding:0 2px">Total geral: <b style="color:#fff">${all.length}</b> colaborador${all.length>1?'es':''} cadastrado${all.length>1?'s':''}</div>${renderTable(opUsers,'Operacional','#60a5fa','🔵')}`;
 }
 
 function deleteCollaborator(username){
@@ -1893,7 +1953,7 @@ function saveProfile(){
   saveDB();
   document.getElementById('s-name').textContent=u.nome;
   const roleEl2=document.getElementById('s-role');
-  if(roleEl2)roleEl2.textContent=u.role==='senior'?'👑 Sênior':u.role==='fin'?'💰 Financeiro':'🔵 Operacional';
+  if(roleEl2)roleEl2.textContent=u.role==='senior'?'👑 Sênior':'🔵 Operacional';
   const av=document.getElementById('s-avatar');
   if(u.photo){av.innerHTML=`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;av.style.fontSize='0';}
   else{av.textContent=u.nome.charAt(0).toUpperCase();av.style.fontSize='';}
@@ -1932,7 +1992,7 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
         const found=db.users.find(function(u){return u.user.toLowerCase()===creds.user.toLowerCase()&&u.pass===creds.pass;});
         if(found&&found.status==='approved'){
           session.user=found;
-          session.dashSc=found.role==='fin'?'fin':found.role==='cli'?'cli':'op';
+          session.dashSc=found.role==='cli'?'cli':'op';
           document.getElementById('screen-login').classList.remove('active');
           document.getElementById('screen-app').classList.add('active');
           renderSidebar();
@@ -2013,7 +2073,6 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
     <div class="field"><label>Perfil de Acesso</label>
       <select id="ep-perfil" style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80030;border-radius:10px;padding:11px 14px;font-size:13px;font-family:Montserrat,sans-serif;outline:none">
         <option value="op">🔵 Operacional</option>
-        <option value="fin">💰 Financeiro</option>
       </select>
     </div>
     <div class="field"><label>Nova Senha <span style="color:var(--gray);font-weight:400">(deixe vazio para não alterar)</span></label><input id="ep-pass" type="password" placeholder="Nova senha"></div>
