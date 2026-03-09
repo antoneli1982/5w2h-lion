@@ -346,26 +346,20 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           if(!remote||!remote.users){ if(cb) cb(false); return; }
           var remoteTs = remote.lastSaved||0;
           var localTs  = db.lastSaved||0;
-          // Always prefer cloud data if it has more users or newer timestamp
           var localUsers = (db.users||[]).length;
           var remoteUsers = (remote.users||[]).length;
-          var shouldLoad = remoteTs > localTs || remoteUsers > localUsers || localTs === 0;
-          if(shouldLoad){
-            Object.assign(db, remote);
-            if(d.photos){
-              var ph=JSON.parse(d.photos);
-              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
-              localStorage.setItem(PH_K, d.photos);
-            }
-            var cl=JSON.parse(JSON.stringify(db));
-            cl.users.forEach(function(u){delete u.photo;});
-            localStorage.setItem(DB_K, JSON.stringify(cl));
-            console.log('[FB] carregado da nuvem ✅ users='+remoteUsers+' ts='+remoteTs);
-            if(cb) cb(true);
-          } else {
-            console.log('[FB] local já é mais novo ts='+localTs+' vs '+remoteTs);
-            if(cb) cb(false);
+          // ALWAYS load from cloud — cloud is source of truth for cross-device sync
+          Object.assign(db, remote);
+          if(d.photos){
+            var ph=JSON.parse(d.photos);
+            db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
+            localStorage.setItem(PH_K, d.photos);
           }
+          var cl=JSON.parse(JSON.stringify(db));
+          cl.users.forEach(function(u){delete u.photo;});
+          localStorage.setItem(DB_K, JSON.stringify(cl));
+          console.log('[FB] carregado da nuvem ✅ users='+remoteUsers+' ts='+remoteTs+' (local ts='+localTs+')');
+          if(cb) cb(true);
         }catch(ex){ console.error('[FB] load parse error',ex); if(cb) cb(false); }
       }).catch(function(e){ console.warn('[FB] load error',e.code,e.message); if(cb) cb(false); });
     };
@@ -716,10 +710,10 @@ function doRegister(){
   const err=document.getElementById('r-error');
   const ok=document.getElementById('r-success');
   err.style.display='none';ok.style.display='none';
-  if(!nome||!user||!pass){showErr(err,'Preencha todos os campos.');return;}
+  const userSave=user.toLowerCase().trim();if(!nome||!userSave||!pass){showErr(err,'Preencha todos os campos.');return;}
   if(pass.length<4){showErr(err,'Senha deve ter mínimo 4 caracteres.');return;}
   if(pass!==pass2){showErr(err,'As senhas não coincidem.');return;}
-  if(db.users.find(u=>u.user===user)){showErr(err,'Usuário já existe. Escolha outro.');return;}
+  if(db.users.find(u=>u.user===userSave)){showErr(err,'Usuário já existe. Escolha outro.');return;}
   if(isSenior&&special!==SENIOR_KEY){showErr(err,'Senha especial sênior incorreta.');return;}
   const finalRole=isSenior?'senior':role;
   const photo = document.getElementById('r-photo-img').src;
@@ -728,7 +722,7 @@ function doRegister(){
   const newStatus = finalRole==='senior'?'approved':'pending';
   const empresa=document.getElementById('r-empresa')?document.getElementById('r-empresa').value.trim():'';
   if(finalRole==='cli'&&!empresa){showErr(err,'Informe o nome da empresa para perfil Cliente.');return;}
-  db.users.push({nome,user,pass,role:finalRole,empresa:finalRole==='cli'?empresa:'',photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
+  db.users.push({nome,user:userSave,pass,role:finalRole,empresa:finalRole==='cli'?empresa:'',photo:hasPhoto?photo:null,status:newStatus,allowedProjects:'none'});
   saveDB();
   // ── LIMPAR TODOS OS CAMPOS DO FORMULÁRIO APÓS CRIAR A CONTA ──
   document.getElementById('r-nome').value='';
@@ -766,14 +760,14 @@ function doLogin(){
   const rememberCb=document.getElementById('l-remember');
   err.style.display='none';
   // Try local first, if not found sync from Firebase then retry
-  const found=db.users.find(u=>u.user===user&&u.pass===pass);
+  const userLC=user.toLowerCase().trim();const passT=pass.trim();const found=db.users.find(u=>u.user.toLowerCase()===userLC&&u.pass===passT);
   if(!found){
     // Maybe Firebase hasn't loaded yet — sync now and retry
     if(window._fbLoad){
       showErr(err,'⏳ Sincronizando... tente novamente em 3 segundos.');
       window._fbLoad(function(loaded){
         if(loaded){
-          const found2=db.users.find(u=>u.user===user&&u.pass===pass);
+          const found2=db.users.find(u=>u.user.toLowerCase()===userLC&&u.pass===passT);
           if(found2){
             err.style.display='none';
             doLogin(); // retry after sync
