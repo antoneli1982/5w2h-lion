@@ -1697,7 +1697,7 @@ function showToast(msg) {
 
 function epRender(p) {
   const wrap = document.getElementById('ep-wrap'); if (!wrap) return;
-  const u = db.users.find(x => x.user === session.user);
+  const u = session.user && typeof session.user === 'object' ? session.user : db.users.find(x => x.user === session.user);
   if (!u || u.role !== 'senior') { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   if (!p.emailjsConfig) p.emailjsConfig = {serviceId:'',templateId:'',publicKey:''};
@@ -1789,7 +1789,7 @@ async function _epSend(p) {
   try {
     if (typeof emailjs === 'undefined') return;
     emailjs.init(cfg.publicKey);
-    const sender = db.users.find(u => u.user === session.user);
+    const sender = session.user && typeof session.user === 'object' ? session.user : db.users.find(u => u.user === session.user);
     const nome = sender?.nome || session.user || 'Sistema';
     for (const email of p.emails) {
       try {
