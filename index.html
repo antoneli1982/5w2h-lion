@@ -834,14 +834,6 @@ function renderProject(p){
       <div class="stat-pill"><div class="v" style="color:var(--success)">${d}</div><div class="l">Concluídas</div></div>
       <div class="gbar-wrap"><div class="gbar-track"><div class="gbar-fill" style="width:${avg}%"></div></div><div class="gbar-pct">${avg}%</div></div>
     </div>
-    <!-- ── PAINEL E-MAIL DO PROJETO ── -->
-    <div id="proj-email-panel" style="display:none;background:#2a1e00;border:1px solid #f5a80033;border-radius:12px;padding:16px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:16px">📧</span>
-          <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800">NOTIFICAÇÕES DO PROJETO</span>
-          <span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Todos recebem aviso a cada atualização</span>
-        </div>
         <button onclick="toggleEmailConfig()" style="background:var(--p2);color:var(--gray2);border:1px solid #f5a80022;border-radius:7px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">⚙️ Configurar EmailJS</button>
       </div>
 
@@ -884,6 +876,97 @@ function renderProject(p){
         </button>
       </div>
     </div>
+    <!-- ██ PAINEL NOTIFICAÇÕES ██ -->
+    <div id="notif-panel" style="display:none;margin-bottom:16px">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="background:#f5a800;width:3px;height:20px;border-radius:2px"></div>
+        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800">NOTIFICAÇÕES</span>
+        <span id="notif-email-count" style="background:#1a1200;border:1px solid #f5a80044;color:#f5a800;border-radius:99px;padding:1px 10px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0 e-mails</span>
+        <div style="flex:1"></div>
+        <button onclick="toggleNotifConfig()" id="btn-cfg-toggle"
+          style="background:transparent;color:var(--gray);border:1px solid #ffffff15;border-radius:7px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;transition:all .2s"
+          onmouseover="this.style.borderColor='#f5a800';this.style.color='#f5a800'"
+          onmouseout="this.style.borderColor='#ffffff15';this.style.color='var(--gray)'">
+          ⚙️ EmailJS
+        </button>
+      </div>
+
+      <!-- EmailJS config (colapsável) -->
+      <div id="notif-cfg-box" style="display:none;background:#1a1200;border:1px solid #f5a80044;border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800">🔑 CONFIGURAÇÃO EMAILJS</span>
+          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);text-decoration:none;border:1px solid #ffffff10;border-radius:4px;padding:1px 7px;font-family:Montserrat,sans-serif">emailjs.com ↗</a>
+          <span style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-left:auto">200 e-mails grátis/mês</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Service ID</div>
+            <input id="ejs-service" type="text" placeholder="service_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
+              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Template ID</div>
+            <input id="ejs-template" type="text" placeholder="template_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
+              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Public Key</div>
+            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
+              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
+              oninput="saveEmailjsConfig(session.projId)">
+          </div>
+        </div>
+        <div style="margin-top:8px;padding:8px 10px;background:var(--p2);border-radius:7px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;line-height:1.6">
+          📋 No template do EmailJS, use as variáveis: <span style="color:#f5a800">{{to_email}}</span> · <span style="color:#f5a800">{{project}}</span> · <span style="color:#f5a800">{{from_name}}</span> · <span style="color:#f5a800">{{mensagem}}</span>
+        </div>
+      </div>
+
+      <!-- Duas colunas: destinatários | mensagem interna -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <!-- Col 1: Destinatários -->
+        <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:10px;padding:14px">
+          <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+            📧 Destinatários de E-mail
+          </div>
+          <div id="email-chips" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-height:20px"></div>
+          <div style="display:flex;gap:6px">
+            <input id="new-email-input" type="email" placeholder="email@empresa.com"
+              style="flex:1;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:7px 10px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;min-width:0;transition:border .2s"
+              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
+              onkeydown="if(event.key==='Enter')addEmailToProject(session.projId)">
+            <button onclick="addEmailToProject(session.projId)"
+              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:7px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap;box-shadow:0 0 10px #f5a80022">
+              ➕
+            </button>
+          </div>
+          <div style="margin-top:8px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">
+            ⚡ E-mail automático enviado 3s após qualquer edição
+          </div>
+        </div>
+
+        <!-- Col 2: Mensagem interna (independente do e-mail) -->
+        <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:10px;padding:14px">
+          <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+            💬 Mensagem Interna do Projeto
+          </div>
+          <textarea id="proj-internal-msg" rows="3" placeholder="Escreva aqui recados, observações ou contexto para quem acessar este projeto..."
+            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.5;transition:border .2s"
+            onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
+            oninput="saveInternalMsg(session.projId)"></textarea>
+          <div id="proj-msg-saved" style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-top:5px;text-align:right;opacity:0;transition:opacity .3s">✔ Salvo</div>
+          <div id="proj-msg-history" style="margin-top:8px"></div>
+        </div>
+
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th><th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th><th>Status</th><th>📎 Anexo</th><th></th></tr></thead>
@@ -897,7 +980,7 @@ function renderProject(p){
 
 
   `;
-  renderRows(p);buildLegend();renderEmailPanel(p);
+  renderRows(p);buildLegend();renderNotifPanel(p);
 }
 
 function renderRows(p){
@@ -945,7 +1028,7 @@ function renderRows(p){
         const reader=new FileReader();
         reader.onload=ev=>{
           row.anexo=ev.target.result;row.anexoNome=file.name;row.anexoTipo=file.type;
-          saveDB();notifyProjectUpdate(p);renderProject(p);
+          saveDB();renderProject(p);
         };
         reader.readAsDataURL(file);
       };
@@ -976,7 +1059,7 @@ function startCellEdit(td,p,rowId,field){
 function addRow(){
   const p=db.projects.find(x=>x.id===session.projId);if(!p)return;
   p.rows.push({id:db.nextRowId++,acao:'Nova ação',what:'',why:'',where:'',when:'',who:'',how:'',howMuch:'',status:0,anexo:null,anexoNome:'',anexoTipo:''});
-  saveDB();notifyProjectUpdate(p);
+  saveDB();
   renderProject(p);
 }
 function confirmDelRow(){
@@ -1160,7 +1243,7 @@ function addCronTask(pid){
     color:GANTT_COLORS[p.gantt.length%GANTT_COLORS.length]
   });
   closeAddCronForm(pid);
-  saveDB();notifyProjectUpdate(p);
+  saveDB();
   renderGantt(p);
 }
 
@@ -1794,137 +1877,6 @@ async function enviarNotificacao(pid){
 }
 </script>
 
-function renderEmailView(p){
-  const u=db.users.find(x=>x.user===session.user);
-  if(!u||u.role!=='senior'){
-    document.getElementById('main-content').innerHTML=`
-      <div class="fade-in content" style="text-align:center;padding:60px 20px">
-        <div style="font-size:48px;margin-bottom:16px">🔒</div>
-        <div style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:800;color:var(--gray2)">Acesso restrito ao Sênior</div>
-        <div style="color:var(--gray);font-size:13px;margin-top:8px">Somente o Sênior pode gerenciar notificações por e-mail.</div>
-      </div>`;
-    return;
-  }
-
-  if(!p.emailjsConfig)p.emailjsConfig={serviceId:'',templateId:'',publicKey:''};
-  if(!p.emails)p.emails=[];
-
-  document.getElementById('main-content').innerHTML=`
-  <div class="fade-in">
-    <div class="view-header">
-      <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-      <div class="view-title">${p.name}</div>
-      <div class="view-tabs">
-        <button class="view-tab" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
-        <button class="view-tab cron" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
-        <button class="view-tab email active" onclick="openProject(${p.id},'email')">📧 E-mail</button>
-      </div>
-    </div>
-    <div class="content">
-
-      <!-- ── GUIA EMAILJS ───────────────────────────────────────── -->
-      <div style="background:#2a1e00;border:1px solid #f5a80033;border-radius:12px;padding:16px;margin-bottom:20px">
-        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;margin-bottom:10px">⚙️ COMO CONFIGURAR O EMAILJS (GRATUITO)</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
-          <div style="background:var(--p2);border-radius:8px;padding:10px">
-            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">① Criar conta</div>
-            <div style="color:var(--gray);font-size:10px">Acesse <a href="https://www.emailjs.com" target="_blank" style="color:#f5a800">emailjs.com</a> → Sign Up grátis</div>
-          </div>
-          <div style="background:var(--p2);border-radius:8px;padding:10px">
-            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">② Email Service</div>
-            <div style="color:var(--gray);font-size:10px">Add New Service → Gmail ou Outlook → copie o <b style="color:var(--gray2)">Service ID</b></div>
-          </div>
-          <div style="background:var(--p2);border-radius:8px;padding:10px">
-            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">③ Email Template</div>
-            <div style="color:var(--gray);font-size:10px">Create Template → use variáveis:<br><span style="color:var(--gray2);font-size:9px">{{to_email}} {{assunto}} {{mensagem}} {{from_name}} {{project}}</span><br>Copie o <b style="color:var(--gray2)">Template ID</b></div>
-          </div>
-          <div style="background:var(--p2);border-radius:8px;padding:10px">
-            <div style="color:#f5a800;font-size:11px;font-weight:700;margin-bottom:4px">④ Public Key</div>
-            <div style="color:var(--gray);font-size:10px">Account → General → copie sua <b style="color:var(--gray2)">Public Key</b></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── CONFIG EMAILJS ─────────────────────────────────────── -->
-      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
-        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">🔑 CONFIGURAÇÃO EMAILJS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div>
-            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Service ID</label>
-            <input id="ejs-service" type="text" placeholder="service_xxxxxxx" value="${p.emailjsConfig.serviceId}"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-          <div>
-            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Template ID</label>
-            <input id="ejs-template" type="text" placeholder="template_xxxxxxx" value="${p.emailjsConfig.templateId}"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-          <div>
-            <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Public Key</label>
-            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx" value="${p.emailjsConfig.publicKey}"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(${p.id})">
-          </div>
-        </div>
-      </div>
-
-      <!-- ── DESTINATÁRIOS ──────────────────────────────────────── -->
-      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
-        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">📋 DESTINATÁRIOS <span style="font-size:11px;color:var(--gray);font-weight:400">(${(p.emails||[]).length} cadastrado(s))</span></div>
-        <div id="email-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
-          ${(p.emails||[]).length===0
-            ? '<div style="color:var(--gray);font-size:12px;font-family:Montserrat,sans-serif;padding:10px;background:var(--p3);border-radius:8px;text-align:center">Nenhum e-mail cadastrado. Adicione abaixo. ↓</div>'
-            : (p.emails||[]).map((em,i)=>`
-              <div style="display:flex;align-items:center;gap:10px;background:var(--p3);border-radius:8px;padding:9px 12px;border:1px solid #f5a80015">
-                <span style="font-size:14px">📧</span>
-                <span style="flex:1;font-size:12px;color:var(--gray2);font-family:Montserrat,sans-serif">${em}</span>
-                <button onclick="removeEmail(${p.id},${i})" style="background:#2a0808;color:#ef4444;border:1px solid #ef444433;border-radius:6px;font-size:11px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">✕ Remover</button>
-              </div>`).join('')
-          }
-        </div>
-        <div style="display:flex;gap:8px">
-          <input id="new-email-input" type="email" placeholder="Digite o e-mail e pressione Enter ou clique em Adicionar"
-            style="flex:1;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none"
-            onkeydown="if(event.key==='Enter')addEmailToProject(${p.id})">
-          <button onclick="addEmailToProject(${p.id})"
-            style="background:#2a1e00;color:#f5a800;border:1.5px solid #f5a80044;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap">
-            ➕ Adicionar
-          </button>
-        </div>
-      </div>
-
-      <!-- ── COMPOR MENSAGEM ────────────────────────────────────── -->
-      <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:12px;padding:18px;margin-bottom:18px">
-        <div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800;margin-bottom:14px">✉️ COMPOR MENSAGEM</div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Assunto</label>
-          <input id="email-assunto" type="text" placeholder="Ex: Atualização do projeto ${p.name}"
-            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Mensagem</label>
-          <textarea id="email-mensagem" rows="5" placeholder="Digite aqui a mensagem completa que será enviada para todos os destinatários..."
-            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:9px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box"></textarea>
-        </div>
-      </div>
-
-      <!-- ── ENVIAR ─────────────────────────────────────────────── -->
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <button onclick="enviarNotificacao(${p.id})"
-          style="background:#f5a800;color:#111;border:none;border-radius:10px;padding:13px 32px;font-size:14px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.5px;box-shadow:0 0 22px #f5a80044;transition:all .2s">
-          🚀 Enviar Notificação
-        </button>
-        <div id="email-status" style="font-size:12px;font-family:Montserrat,sans-serif;color:var(--gray)"></div>
-      </div>
-
-    </div>
-  </div>`;
-}
-
-<script>
-// ── MOSTRAR ABA EMAIL PARA SÊNIOR ──────────────────────────────────────
 function showEmailTab(){
   const btn = document.getElementById('tab-email-btn');
   if(!btn) return;
@@ -1933,47 +1885,65 @@ function showEmailTab(){
 }
 </script>
 <script>
-// ══════════════════════════════════════════════════════════
-// EMAIL NOTIFICATIONS — AUTO DISPARO A CADA ATUALIZAÇÃO
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// NOTIFICAÇÕES v3 — PAINEL INTEGRADO
+// ══════════════════════════════════════════════════════
 
-function renderEmailPanel(p) {
-  const panel = document.getElementById('proj-email-panel');
+function renderNotifPanel(p) {
+  const panel = document.getElementById('notif-panel');
   if (!panel) return;
   const u = db.users.find(x => x.user === session.user);
-  if (!u || u.role !== 'senior') { panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
+  const isSenior = u && u.role === 'senior';
+  panel.style.display = isSenior ? 'block' : 'none';
+  if (!isSenior) return;
 
-  // Fill EmailJS config fields
-  const cfg = p.emailjsConfig || {};
+  if (!p.emailjsConfig) p.emailjsConfig = {serviceId:'',templateId:'',publicKey:''};
+  if (!p.emails) p.emails = [];
+  if (!p.internalMsg) p.internalMsg = '';
+
+  // Fill config
   const svc = document.getElementById('ejs-service');
   const tpl = document.getElementById('ejs-template');
   const pub = document.getElementById('ejs-pubkey');
-  if (svc) svc.value = cfg.serviceId || '';
-  if (tpl) tpl.value = cfg.templateId || '';
-  if (pub) pub.value = cfg.publicKey || '';
+  if (svc) svc.value = p.emailjsConfig.serviceId || '';
+  if (tpl) tpl.value = p.emailjsConfig.templateId || '';
+  if (pub) pub.value = p.emailjsConfig.publicKey || '';
 
-  // Render email chips
+  // Count
+  const cnt = document.getElementById('notif-email-count');
+  if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
+
+  // Internal message
+  const ta = document.getElementById('proj-internal-msg');
+  if (ta) ta.value = p.internalMsg || '';
+
+  // Chips
+  _renderEmailChips(p);
+}
+
+function _renderEmailChips(p) {
   const chips = document.getElementById('email-chips');
   if (!chips) return;
   chips.innerHTML = '';
   if (!p.emails || p.emails.length === 0) {
-    chips.innerHTML = '<span style="font-size:11px;color:var(--gray);font-family:Montserrat,sans-serif">Nenhum e-mail cadastrado. Adicione abaixo para receber notificações.</span>';
+    chips.innerHTML = '<span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Nenhum e-mail cadastrado ainda.</span>';
     return;
   }
   p.emails.forEach((em, i) => {
     const chip = document.createElement('div');
-    chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:var(--p2);border:1px solid #f5a80022;border-radius:20px;padding:4px 10px 4px 12px';
+    chip.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--p3);border:1px solid #f5a80022;border-radius:7px;padding:5px 8px 5px 10px';
     chip.innerHTML = `
-      <span style="font-size:11px;color:var(--gray2);font-family:Montserrat,sans-serif">${em}</span>
-      <button onclick="removeEmail(${p.id},${i})" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:0;line-height:1" title="Remover">✕</button>
+      <span style="font-size:11px;color:var(--gray2);font-family:Montserrat,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">📧 ${em}</span>
+      <button onclick="removeEmail(${p.id},${i})"
+        style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0"
+        title="Remover">✕</button>
     `;
     chips.appendChild(chip);
   });
 }
 
-function toggleEmailConfig() {
-  const box = document.getElementById('emailjs-cfg-box');
+function toggleNotifConfig() {
+  const box = document.getElementById('notif-cfg-box');
   if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 
@@ -1992,14 +1962,16 @@ function saveEmailjsConfig(pid) {
 function addEmailToProject(pid) {
   const inp = document.getElementById('new-email-input'); if (!inp) return;
   const em = inp.value.trim().toLowerCase();
-  if (!em || !/^[^@]+@[^@]+\.[^@]+$/.test(em)) { showToast('❌ E-mail inválido!'); return; }
+  if (!em || !em.includes('@') || !em.includes('.')) { showToast('❌ E-mail inválido!'); return; }
   const p = db.projects.find(x => x.id === pid); if (!p) return;
   if (!p.emails) p.emails = [];
   if (p.emails.includes(em)) { showToast('⚠️ E-mail já cadastrado!'); return; }
   p.emails.push(em);
   saveDB();
   inp.value = '';
-  renderEmailPanel(p);
+  const cnt = document.getElementById('notif-email-count');
+  if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
+  _renderEmailChips(p);
   showToast('✅ ' + em + ' adicionado!');
 }
 
@@ -2007,51 +1979,59 @@ function removeEmail(pid, idx) {
   const p = db.projects.find(x => x.id === pid); if (!p || !p.emails) return;
   const em = p.emails.splice(idx, 1)[0];
   saveDB();
-  renderEmailPanel(p);
+  const cnt = document.getElementById('notif-email-count');
+  if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
+  _renderEmailChips(p);
   showToast('🗑️ ' + em + ' removido.');
 }
 
-// Debounce: evita disparar 10x em edições rápidas
+// Mensagem interna (salva com debounce)
+let _msgTimer = null;
+function saveInternalMsg(pid) {
+  clearTimeout(_msgTimer);
+  _msgTimer = setTimeout(() => {
+    const p = db.projects.find(x => x.id === pid); if (!p) return;
+    const ta = document.getElementById('proj-internal-msg');
+    if (!ta) return;
+    p.internalMsg = ta.value;
+    saveDB();
+    const savedEl = document.getElementById('proj-msg-saved');
+    if (savedEl) { savedEl.style.opacity = '1'; setTimeout(() => savedEl.style.opacity = '0', 2000); }
+  }, 800);
+}
+
+// Debounce notificação de e-mail — só dispara 3s após última edição
 let _notifyTimer = null;
 function notifyProjectUpdate(p) {
   if (!p || !p.emails || p.emails.length === 0) return;
   const cfg = p.emailjsConfig || {};
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
   clearTimeout(_notifyTimer);
-  _notifyTimer = setTimeout(() => _dispatchEmails(p), 3000); // aguarda 3s após última edição
+  _notifyTimer = setTimeout(() => _dispatchEmails(p), 3000);
 }
 
 async function _dispatchEmails(p) {
   const cfg = p.emailjsConfig || {};
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
   if (!p.emails || p.emails.length === 0) return;
-
   try {
-    if (typeof emailjs === 'undefined') {
-      console.warn('[EMAIL] EmailJS não carregado');
-      return;
-    }
+    if (typeof emailjs === 'undefined') return;
     emailjs.init(cfg.publicKey);
     const sender = db.users.find(u => u.user === session.user);
     const senderName = sender?.nome || session.user || 'Sistema 5W2H';
-
     for (const email of p.emails) {
       try {
         await emailjs.send(cfg.serviceId, cfg.templateId, {
-          to_email:    email,
-          to_name:     email,
-          from_name:   senderName,
-          project:     p.name,
-          assunto:     'Atualização no projeto: ' + p.name,
-          mensagem:    'O projeto "' + p.name + '" foi atualizado por ' + senderName + '. Acesse a plataforma para ver as mudanças.',
-          reply_to:    email,
+          to_email: email, to_name: email, from_name: senderName,
+          project: p.name,
+          assunto: 'Atualização: ' + p.name,
+          mensagem: 'O projeto "' + p.name + '" foi atualizado por ' + senderName + '. Acesse para ver as mudanças.',
+          reply_to: email,
         });
-      } catch(e) { console.warn('[EMAIL] Falha para', email, e); }
+      } catch(e) { console.warn('[EMAIL]', email, e); }
     }
-    console.log('[EMAIL] Notificações enviadas para', p.emails.length, 'destinatário(s)');
-  } catch(e) {
-    console.error('[EMAIL] Erro geral:', e);
-  }
+    showToast('📧 Notificação enviada para ' + p.emails.length + ' destinatário(s)');
+  } catch(e) { console.error('[EMAIL]', e); }
 }
 </script>
 </body>
