@@ -278,197 +278,163 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 /* ══════════════════════════════════════════════════════════
    RESPONSIVE COMPLETO — TABLET (≤1024px)
 ══════════════════════════════════════════════════════════ */
+
+/* ══ TABLET (≤1024px) ══ */
 @media (max-width:1024px){
   .sidebar{ width:210px; min-width:210px; }
-  .auth-card{ max-width:480px; }
   table{ min-width:750px; }
-  .dash-grid, .projects-grid{
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .stats-bar{ gap:8px; }
-  .stat-pill{ min-width:75px; padding:7px 10px; }
 }
 
-/* ══════════════════════════════════════════════════════════
-   RESPONSIVE COMPLETO — CELULAR (≤767px)
-══════════════════════════════════════════════════════════ */
+/* ══ CELULAR (≤767px) ══ */
 @media (max-width:767px){
 
-  /* ── Layout principal ── */
-  #screen-app{
-    flex-direction:column !important;
-    height:100vh;
-    overflow:hidden;
-  }
-  #screen-app > *:not(.sidebar){
-    flex:1 !important;
+  /* Layout: sidebar vai para baixo */
+  #screen-app{ flex-direction:column !important; }
+
+  /* Área principal ocupa o espaço e deixa espaço pro menu */
+  .main {
+    flex:1 1 auto !important;
     overflow-y:auto !important;
-    padding-bottom:64px !important;
-    height:calc(100vh - 56px) !important;
+    padding-bottom:70px !important;
+    min-height:0 !important;
   }
 
-  /* ── Sidebar → barra inferior ── */
+  /* Sidebar vira barra na base */
   .sidebar{
-    width:100% !important; min-width:unset !important;
-    height:56px !important; min-height:56px !important; max-height:56px !important;
-    position:fixed !important; bottom:0 !important; top:auto !important;
-    left:0; right:0; z-index:999;
+    order:99;
+    width:100% !important;
+    min-width:unset !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    position:fixed !important;
+    bottom:0 !important;
+    left:0 !important;
+    right:0 !important;
+    top:auto !important;
+    z-index:1000;
     flex-direction:row !important;
-    overflow-x:auto !important; overflow-y:hidden !important;
-    border-right:none !important; border-top:1px solid #ffffff15 !important;
-    padding:0 6px !important; align-items:center !important;
-    gap:4px; -webkit-overflow-scrolling:touch;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    border-right:none !important;
+    border-top:1px solid rgba(255,255,255,0.1) !important;
+    padding:0 6px !important;
+    align-items:center !important;
+    gap:6px !important;
+    -webkit-overflow-scrolling:touch;
   }
-  .sidebar-logo,
-  .sidebar-section-title,
-  .sidebar-menu-label,
-  #s-name, #s-role { display:none !important; }
 
+  /* Esconde elementos pesados da sidebar */
+  .sidebar-logo { display:none !important; }
+  .sidebar-section-title { display:none !important; }
+  #s-name { display:none !important; }
+  #s-role { display:none !important; }
+
+  /* Avatar compacto */
   .sidebar-user{
-    flex-direction:row !important; align-items:center !important;
-    padding:4px 6px !important; gap:6px !important;
-    border-right:1px solid #ffffff15 !important;
-    flex-shrink:0 !important; min-width:fit-content !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    padding:0 6px !important;
     border-bottom:none !important;
+    border-right:1px solid rgba(255,255,255,0.1) !important;
+    flex-shrink:0 !important;
+    height:100% !important;
   }
   .user-avatar{
-    width:30px !important; height:30px !important;
-    font-size:11px !important; flex-shrink:0 !important;
+    width:30px !important;
+    height:30px !important;
+    font-size:11px !important;
   }
+
+  /* Menu horizontal com scroll */
   .sidebar-menu{
-    display:flex !important; flex-direction:row !important;
-    align-items:center !important; flex:1 !important;
-    overflow-x:auto !important; gap:4px !important;
-    padding:4px 0 !important; -webkit-overflow-scrolling:touch;
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    flex:1 !important;
+    overflow-x:auto !important;
+    gap:4px !important;
+    padding:4px 0 !important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
+  .sidebar-menu::-webkit-scrollbar{ display:none; }
+
   .menu-item{
-    white-space:nowrap !important; font-size:9px !important;
-    padding:4px 10px !important; border-radius:20px !important;
-    flex-shrink:0 !important; height:32px !important;
-    display:flex !important; align-items:center !important;
+    white-space:nowrap !important;
+    font-size:10px !important;
+    padding:5px 12px !important;
+    border-radius:20px !important;
+    flex-shrink:0 !important;
   }
+
+  /* Botões do rodapé da sidebar */
   .sidebar-bottom{
-    display:flex !important; flex-direction:row !important;
-    gap:2px !important; padding:4px !important;
-    flex-shrink:0 !important; margin-left:auto !important;
+    display:flex !important;
+    flex-direction:row !important;
+    gap:3px !important;
+    flex-shrink:0 !important;
+    padding:0 4px !important;
   }
-  .sidebar-bottom button, .btn-logout, #btn-sair{
-    font-size:8px !important; padding:4px 6px !important; white-space:nowrap;
+  .sidebar-bottom button{
+    font-size:8px !important;
+    padding:4px 6px !important;
+    white-space:nowrap;
   }
 
-  /* ── Telas de auth ── */
-  .screen-login.active, .screen-register.active, .screen-edit-profile.active{
-    padding:12px 0 !important; align-items:flex-start !important; overflow-y:auto !important;
-  }
+  /* Auth */
   .auth-card{
-    width:95% !important; max-width:100% !important;
-    padding:18px 14px !important; margin:8px auto !important;
+    width:95% !important;
+    padding:20px 14px !important;
+    margin:10px auto !important;
   }
-  .auth-logo img, .auth-logo .logo-lion, .auth-logo .logo-uni{
-    max-height:45px !important; max-width:100px !important;
-  }
-  .auth-tabs{ gap:0 !important; }
-  .auth-tab{ font-size:11px !important; padding:8px 14px !important; }
-  .auth-input input, .auth-input select, input[type=text], input[type=password], select{
-    font-size:14px !important;
-  }
+  .auth-logo img{ max-height:50px !important; }
 
-  /* ── Topbar ── */
-  .topbar{
-    padding:6px 10px !important; flex-wrap:wrap; gap:4px;
-    min-height:44px !important;
-  }
-  #tb-title, .topbar-title{ font-size:12px !important; }
-  .topbar-badge{ font-size:9px !important; padding:2px 6px !important; }
-  .view-tabs{ gap:3px !important; flex-wrap:nowrap; overflow-x:auto; }
-  .view-tab{ font-size:9px !important; padding:4px 8px !important; white-space:nowrap; }
+  /* Topbar */
+  .topbar{ padding:8px 10px !important; flex-wrap:wrap; gap:4px; }
+  #tb-title{ font-size:13px !important; }
+  .view-tab{ font-size:9px !important; padding:4px 8px !important; }
 
-  /* ── Stats bar ── */
-  .stats-bar{ gap:6px !important; margin-bottom:10px !important; }
-  .stat-pill{ min-width:65px !important; padding:6px 8px !important; }
-  .stat-pill .v{ font-size:16px !important; }
-  .stat-pill .l{ font-size:9px !important; }
-  .gbar-wrap{ flex:1; min-width:100px; }
-
-  /* ── View header ── */
-  .view-header{ flex-wrap:wrap; gap:6px; padding:10px 12px !important; }
-  .btn-back{ font-size:10px !important; padding:5px 10px !important; }
-  .view-title{ font-size:14px !important; }
-
-  /* ── Dashboard ── */
-  .dash-grid, .projects-grid{
-    grid-template-columns: 1fr 1fr !important;
-    gap:8px !important;
-  }
-  .project-card{ padding:10px !important; }
-  .project-card .pc-name{ font-size:11px !important; }
-
-  /* ── Tabela 5W2H ── */
+  /* Tabela */
   .table-wrap{
-    overflow-x:auto !important; -webkit-overflow-scrolling:touch;
-    border-radius:8px;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
   }
   table{ min-width:620px !important; }
   th{ font-size:9px !important; padding:6px 5px !important; }
   td{ font-size:10px !important; padding:5px 5px !important; }
-  .btn-new-row{ font-size:10px !important; padding:6px 12px !important; }
-  .status-btns{ flex-wrap:wrap; gap:3px !important; }
-  .status-btns button{ font-size:8px !important; padding:3px 6px !important; }
 
-  /* ── Gantt / Cronograma ── */
+  /* Gantt */
   .gantt-wrap, .cron-wrap{
-    overflow-x:auto !important; -webkit-overflow-scrolling:touch;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
   }
-  .gantt-row td, .cron-row td{ font-size:9px !important; padding:4px 5px !important; }
 
-  /* ── Painel de notificações / email ── */
-  #ep-body-cols{
-    grid-template-columns:1fr !important;
-  }
+  /* Email painel */
+  #ep-body-cols{ grid-template-columns:1fr !important; }
   #ep-body-cols > div:first-child{
-    border-right:none !important; border-bottom:1px solid #ffffff10 !important;
-    padding-bottom:12px !important;
+    border-right:none !important;
+    border-bottom:1px solid rgba(255,255,255,0.1) !important;
   }
-  #ep-cfg > div[style*="grid-template-columns:1fr 1fr 1fr"]{
-    grid-template-columns:1fr !important;
-  }
-  #ep-wrap{ margin-bottom:10px !important; }
 
-  /* ── Modais ── */
-  .modal-overlay{ padding:8px !important; align-items:flex-end !important; }
+  /* Modal */
   .modal{
-    width:100% !important; max-width:100% !important;
-    margin:0 !important; max-height:88vh !important;
-    border-radius:14px 14px 0 0 !important;
-    overflow-y:auto !important;
-  }
-  .modal-title{ font-size:14px !important; }
-
-  /* ── Botões gerais ── */
-  .btn-primary, .btn-secondary{
-    font-size:11px !important; padding:8px 14px !important;
+    width:97% !important;
+    max-width:100% !important;
+    max-height:90vh !important;
+    margin:0 auto !important;
   }
 
-  /* ── Painel Sênior ── */
-  #modal-senior-panel .modal{ max-height:90vh !important; }
-  .senior-user-card{ padding:8px !important; }
-  .senior-user-card .sua-name{ font-size:11px !important; }
-
-  /* ── Firebase / Nuvem config ── */
-  #modal-firebase .modal{ max-width:100% !important; }
+  /* Dashboard */
+  .dash-grid{ grid-template-columns:1fr 1fr !important; }
 }
 
-/* ══════════════════════════════════════════════════════════
-   RESPONSIVE — CELULAR PEQUENO (≤400px)
-══════════════════════════════════════════════════════════ */
+/* ══ CELULAR PEQUENO (≤400px) ══ */
 @media (max-width:400px){
-  .auth-card{ padding:14px 10px !important; }
-  th{ font-size:8px !important; padding:5px 4px !important; }
-  td{ font-size:9px !important; padding:4px 4px !important; }
-  .topbar{ padding:5px 8px !important; }
-  #tb-title{ font-size:11px !important; }
-  .stat-pill .v{ font-size:14px !important; }
-  .menu-item{ font-size:8px !important; padding:3px 8px !important; }
+  .auth-card{ padding:16px 12px !important; }
+  th{ font-size:8px !important; }
+  td{ font-size:9px !important; }
+  .menu-item{ font-size:9px !important; padding:4px 9px !important; }
 }
 
 </style>
