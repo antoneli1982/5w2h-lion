@@ -388,19 +388,21 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           console.log('[FB] UI atualizada com dados da nuvem');
         }
         console.log('[FB] pronto, loaded='+loaded);
-        // Try auto-login after Firebase data is ready
+        // Auto-login: restore full user object from session (no db.users needed)
         try{
           var sess=localStorage.getItem('lion_remember_session');
           if(sess){
-            var creds=JSON.parse(sess);
-            var found=db.users.find(function(u){return u.user.toLowerCase()===creds.user.toLowerCase()&&u.pass===creds.pass;});
-            if(found&&found.status==='approved'){
-              session.user=found;
-              session.dashSc=found.role==='fin'?'fin':found.role==='cli'?'cli':'op';
+            var savedUser=JSON.parse(sess);
+            // Refresh user from db if available, else use saved object
+            var liveUser = db.users ? db.users.find(function(u){return u.user===savedUser.user;}) : null;
+            var userObj = liveUser || savedUser;
+            if(userObj && userObj.status==='approved'){
+              session.user=userObj;
+              session.dashSc=userObj.role==='fin'?'fin':userObj.role==='cli'?'cli':'op';
               document.getElementById('screen-login').classList.remove('active');
               document.getElementById('screen-app').classList.add('active');
               if(typeof renderSidebar==='function') renderSidebar();
-              console.log('[AutoLogin] sessão restaurada:',found.user);
+              console.log('[AutoLogin] ✅ sessão restaurada:',userObj.user);
               return;
             } else {
               localStorage.removeItem('lion_remember_session');
@@ -818,7 +820,7 @@ function doLogin(){
   session.user=found;
   session.dashSc=found.role==='fin'?'fin':'op';
   // Auto-session: save logged user so page refresh keeps session
-  try{ localStorage.setItem('lion_remember_session', JSON.stringify({user:found.user,pass:found.pass})); }catch(e){}
+  try{ localStorage.setItem('lion_remember_session', JSON.stringify(found)); }catch(e){}
   // update sidebar
   const av=document.getElementById('s-avatar');
   av.className='user-avatar'+(found.role==='senior'?' senior':found.role==='fin'?' fin':'');
