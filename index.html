@@ -264,6 +264,221 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .modal-sub{color:var(--gray);font-size:13px;margin-bottom:22px}
 .modal-icon{font-size:38px;margin-bottom:10px}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET (768px–1024px)
+═══════════════════════════════════════════ */
+@media (max-width:1024px){
+  .sidebar{ width:200px; min-width:200px; }
+  .sidebar-logo img, .logo-lion, .logo-uni, .logo-trilium{ max-width:80px !important; }
+  table{ min-width:800px; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — CELULAR (≤767px)
+═══════════════════════════════════════════ */
+@media (max-width:767px){
+  /* Layout: sidebar vira menu inferior */
+  #screen-app{ flex-direction:column !important; }
+
+  .sidebar{
+    width:100% !important;
+    min-width:unset !important;
+    height:auto !important;
+    position:fixed !important;
+    bottom:0; left:0; right:0; top:auto !important;
+    z-index:1000;
+    flex-direction:row !important;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border-right:none !important;
+    border-top:1px solid #ffffff15;
+    padding:0 !important;
+    box-shadow:0 -4px 20px rgba(0,0,0,.5);
+  }
+
+  /* Esconde elementos do sidebar no mobile */
+  .sidebar-logo,
+  .sidebar > div:first-child,
+  #s-avatar, #s-name, #s-role,
+  .sidebar-section-title,
+  .sidebar-menu-label { display:none !important; }
+
+  /* Projetos viram botões horizontais */
+  .sidebar-projects { 
+    display:flex !important; 
+    flex-direction:row !important;
+    overflow-x:auto;
+    gap:4px;
+    padding:6px 8px;
+    width:100%;
+  }
+  .sidebar-project-item {
+    white-space:nowrap;
+    font-size:10px !important;
+    padding:6px 10px !important;
+    border-radius:20px !important;
+    flex-shrink:0;
+  }
+
+  /* Botões de ação no rodapé */
+  .sidebar-actions {
+    display:flex !important;
+    flex-direction:row !important;
+    gap:4px;
+    padding:4px;
+    flex-shrink:0;
+  }
+  .sidebar-actions button {
+    font-size:9px !important;
+    padding:5px 8px !important;
+  }
+
+  /* Conteúdo principal com espaço para menu inferior */
+  .screen-app-main, #main-content, .app-main {
+    padding-bottom:80px !important;
+    overflow-y:auto;
+  }
+
+  /* Topbar mobile */
+  .topbar {
+    padding:8px 12px !important;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .topbar-title { font-size:14px !important; }
+
+  /* Dashboard cards */
+  .dash-grid, .stats-grid {
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+
+  /* Tabela 5W2H — scroll horizontal */
+  .table-wrap{ 
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+    border-radius:8px;
+  }
+  table{ min-width:700px !important; }
+  th, td{ padding:6px 8px !important; font-size:10px !important; }
+
+  /* Gantt */
+  .gantt-wrap{ overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+
+  /* Modais full-screen no mobile */
+  .modal{
+    width:96% !important;
+    max-width:100% !important;
+    margin:8px !important;
+    max-height:92vh !important;
+  }
+
+  /* Painel de email */
+  #ep-wrap > div:last-child {
+    flex-direction:column !important;
+  }
+  #ep-wrap .ep-col { width:100% !important; }
+
+  /* Auth card */
+  .auth-card{
+    width:94% !important;
+    padding:20px 16px !important;
+    margin:10px auto !important;
+  }
+
+  /* Botões de status */
+  .status-btns{ flex-wrap:wrap; gap:4px; }
+  .status-btns button{ font-size:9px !important; padding:4px 8px !important; }
+
+  /* Logos no auth */
+  .auth-logo img{ max-width:60px !important; }
+  .auth-logo .logo-lion,
+  .auth-logo .logo-uni,
+  .auth-logo .logo-trilium{ max-width:80px !important; }
+
+  /* View header */
+  .view-header{ flex-wrap:wrap; gap:8px; }
+  .view-tabs{ flex-wrap:wrap; }
+  .view-tab{ font-size:10px !important; padding:5px 10px !important; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — CELULAR PEQUENO (≤400px)
+═══════════════════════════════════════════ */
+@media (max-width:400px){
+  .auth-card{ padding:16px 12px !important; }
+  th, td{ font-size:9px !important; padding:5px 6px !important; }
+  .topbar-title{ font-size:12px !important; }
+}
+
+
+/* Mobile sidebar user section */
+@media (max-width:767px){
+  .sidebar-user{ 
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    padding:8px 10px !important;
+    gap:8px !important;
+    border-right:1px solid #ffffff10;
+    flex-shrink:0;
+    min-width:fit-content;
+  }
+  .sidebar-user .user-avatar{
+    width:28px !important; height:28px !important;
+    font-size:11px !important;
+    flex-shrink:0;
+  }
+  #s-name{ display:none !important; }
+  #s-role{ display:none !important; }
+  
+  /* Sidebar inner layout for mobile */
+  .sidebar > *:not(.sidebar-user):not(.sidebar-bottom):not(.sidebar-projects-wrap){ 
+    display:none !important; 
+  }
+  .sidebar-bottom{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    padding:4px !important;
+    gap:2px !important;
+    flex-shrink:0;
+    margin-left:auto;
+  }
+  .sidebar-bottom button{
+    font-size:8px !important;
+    padding:4px 6px !important;
+    white-space:nowrap;
+  }
+
+  /* Projects section horizontal scroll */
+  .sidebar-menu{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    overflow-x:auto !important;
+    flex:1 !important;
+    gap:4px !important;
+    padding:6px 8px !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .sidebar-menu .menu-item{
+    white-space:nowrap !important;
+    font-size:9px !important;
+    padding:5px 10px !important;
+    border-radius:20px !important;
+    flex-shrink:0 !important;
+  }
+
+  /* Screen app needs padding for bottom bar */
+  #screen-app > *:not(.sidebar){
+    padding-bottom:70px !important;
+    overflow-y:auto !important;
+    flex:1 !important;
+  }
+}
+
 </style>
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -575,7 +790,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       <div class="topbar-title" id="tb-title">Dashboard</div>
       <div id="tb-badge"></div>
     </div>
-    <div class="content" id="main-content"></div>
+    <div class="content" id="main-content" class="app-main"></div>
   </main>
 </div>
 
