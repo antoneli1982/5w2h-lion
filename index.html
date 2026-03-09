@@ -834,133 +834,118 @@ function renderProject(p){
       <div class="stat-pill"><div class="v" style="color:var(--success)">${d}</div><div class="l">Concluídas</div></div>
       <div class="gbar-wrap"><div class="gbar-track"><div class="gbar-fill" style="width:${avg}%"></div></div><div class="gbar-pct">${avg}%</div></div>
     </div>
-        <button onclick="toggleEmailConfig()" style="background:var(--p2);color:var(--gray2);border:1px solid #f5a80022;border-radius:7px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif">⚙️ Configurar EmailJS</button>
-      </div>
-
-      <!-- Config EmailJS (colapsável) -->
-      <div id="emailjs-cfg-box" style="display:none;margin-top:12px;padding:12px;background:var(--p2);border-radius:8px;border:1px solid #f5a80018">
-        <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px">
-          🔑 Cole aqui as chaves do <a href="https://www.emailjs.com" target="_blank" style="color:#f5a800">emailjs.com</a> (gratuito · 200 e-mails/mês)
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">SERVICE ID</div>
-            <input id="ejs-service" type="text" placeholder="service_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(session.projId)">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">TEMPLATE ID</div>
-            <input id="ejs-template" type="text" placeholder="template_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(session.projId)">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:3px;font-family:Montserrat,sans-serif;font-weight:700">PUBLIC KEY</div>
-            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80022;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none"
-              oninput="saveEmailjsConfig(session.projId)">
-          </div>
-        </div>
-      </div>
-
-      <!-- Lista de e-mails + adicionar -->
-      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center" id="email-chips"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input id="new-email-input" type="email" placeholder="Adicionar e-mail destinatário..."
-          style="flex:1;background:var(--p2);color:#fff;border:1.5px solid #f5a80033;border-radius:8px;padding:8px 12px;font-size:12px;font-family:Montserrat,sans-serif;outline:none;min-width:0"
-          onkeydown="if(event.key==='Enter')addEmailToProject(session.projId)">
-        <button onclick="addEmailToProject(session.projId)"
-          style="background:#f5a800;color:#111;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap">
-          ➕ Adicionar
-        </button>
-      </div>
-    </div>
-        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800">NOTIFICAÇÕES</span>
-        <span id="notif-email-count" style="background:#1a1200;border:1px solid #f5a80044;color:#f5a800;border-radius:99px;padding:1px 10px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0 e-mails</span>
+    <!-- EMAIL SECTION - só para sênior, renderizado via JS -->
+    <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
+      <!-- Linha header -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f5a80033">
+        <div style="width:3px;height:16px;background:#f5a800;border-radius:2px;flex-shrink:0"></div>
+        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;text-transform:uppercase;letter-spacing:.5px">Notificações</span>
+        <span id="ep-count" style="background:#1a1200;border:1px solid #f5a80033;color:#f5a800;border-radius:99px;padding:1px 9px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0</span>
         <div style="flex:1"></div>
-        <button onclick="toggleNotifConfig()" id="btn-cfg-toggle"
-          style="background:transparent;color:var(--gray);border:1px solid #ffffff15;border-radius:7px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;transition:all .2s"
-          onmouseover="this.style.borderColor='#f5a800';this.style.color='#f5a800'"
-          onmouseout="this.style.borderColor='#ffffff15';this.style.color='var(--gray)'">
-          ⚙️ EmailJS
-        </button>
+        <button onclick="toggleEpConfig()" style="font-size:10px;color:var(--gray);background:transparent;border:1px solid #ffffff15;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">⚙️ EmailJS</button>
       </div>
 
-      <!-- EmailJS config (colapsável) -->
-      <div id="notif-cfg-box" style="display:none;background:#1a1200;border:1px solid #f5a80044;border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800">🔑 CONFIGURAÇÃO EMAILJS</span>
-          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);text-decoration:none;border:1px solid #ffffff10;border-radius:4px;padding:1px 7px;font-family:Montserrat,sans-serif">emailjs.com ↗</a>
-          <span style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-left:auto">200 e-mails grátis/mês</span>
+      <!-- Config box (colapsável) -->
+      <div id="ep-cfg" style="display:none;padding:12px 16px;border-bottom:1px solid #f5a80033;background:#1a1200">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700">CHAVES EMAILJS</span>
+          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);border:1px solid #ffffff15;border-radius:4px;padding:1px 6px;text-decoration:none;font-family:Montserrat,sans-serif">criar conta grátis ↗</a>
+          <span style="margin-left:auto;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">200 e-mails/mês grátis</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
           <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Service ID</div>
-            <input id="ejs-service" type="text" placeholder="service_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
-              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
-              oninput="saveEmailjsConfig(session.projId)">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">SERVICE ID</div>
+            <input id="ep-svc" type="text" placeholder="service_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
           </div>
           <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Template ID</div>
-            <input id="ejs-template" type="text" placeholder="template_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
-              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
-              oninput="saveEmailjsConfig(session.projId)">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">TEMPLATE ID</div>
+            <input id="ep-tpl" type="text" placeholder="template_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
           </div>
           <div>
-            <div style="font-size:9px;color:var(--gray);margin-bottom:4px;font-family:Montserrat,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Public Key</div>
-            <input id="ejs-pubkey" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;box-sizing:border-box;outline:none;transition:border .2s"
-              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
-              oninput="saveEmailjsConfig(session.projId)">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">PUBLIC KEY</div>
+            <input id="ep-pub" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
           </div>
         </div>
-        <div style="margin-top:8px;padding:8px 10px;background:var(--p2);border-radius:7px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;line-height:1.6">
-          📋 No template do EmailJS, use as variáveis: <span style="color:#f5a800">{{to_email}}</span> · <span style="color:#f5a800">{{project}}</span> · <span style="color:#f5a800">{{from_name}}</span> · <span style="color:#f5a800">{{mensagem}}</span>
+        <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;padding:6px 8px;background:var(--p2);border-radius:5px">
+          Use no template: <span style="color:#f5a800">{{to_email}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{project}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{from_name}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{mensagem}}</span>
         </div>
       </div>
 
-      <!-- Duas colunas: destinatários | mensagem interna -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <!-- Corpo: 2 colunas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
 
-        <!-- Col 1: Destinatários -->
-        <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:10px;padding:14px">
-          <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
-            📧 Destinatários de E-mail
-          </div>
-          <div id="email-chips" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-height:20px"></div>
+        <!-- Col 1: destinatários -->
+        <div style="padding:12px 16px;border-right:1px solid #f5a80033">
+          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📧 Destinatários de e-mail</div>
+          <div id="ep-chips" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
           <div style="display:flex;gap:6px">
-            <input id="new-email-input" type="email" placeholder="email@empresa.com"
-              style="flex:1;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:7px 10px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;min-width:0;transition:border .2s"
-              onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
-              onkeydown="if(event.key==='Enter')addEmailToProject(session.projId)">
-            <button onclick="addEmailToProject(session.projId)"
-              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:7px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;white-space:nowrap;box-shadow:0 0 10px #f5a80022">
-              ➕
-            </button>
+            <input id="ep-newemail" type="email" placeholder="email@empresa.com"
+              style="flex:1;min-width:0;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:6px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none"
+              onkeydown="if(event.key==='Enter')epAddEmail()">
+            <button onclick="epAddEmail()"
+              style="background:#f5a800;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">➕</button>
           </div>
-          <div style="margin-top:8px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">
-            ⚡ E-mail automático enviado 3s após qualquer edição
-          </div>
+          <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático 3s após qualquer edição</div>
         </div>
 
-        <!-- Col 2: Mensagem interna (independente do e-mail) -->
-        <div style="background:var(--p2);border:1px solid #f5a80022;border-radius:10px;padding:14px">
-          <div style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
-            💬 Mensagem Interna do Projeto
+        <!-- Col 2: envio de mensagem por e-mail -->
+        <div style="padding:12px 16px">
+          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">✉️ Enviar Mensagem por E-mail</div>
+
+          <!-- Destinatário: todos ou específico -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">PARA</div>
+            <select id="ep-to"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
+              <option value="__all__">📢 Todos os destinatários</option>
+            </select>
           </div>
-          <textarea id="proj-internal-msg" rows="3" placeholder="Escreva aqui recados, observações ou contexto para quem acessar este projeto..."
-            style="width:100%;background:var(--p3);color:#fff;border:1.5px solid #f5a80022;border-radius:7px;padding:8px 10px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.5;transition:border .2s"
-            onfocus="this.style.borderColor='#f5a800'" onblur="this.style.borderColor='#f5a80022'"
-            oninput="saveInternalMsg(session.projId)"></textarea>
-          <div id="proj-msg-saved" style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-top:5px;text-align:right;opacity:0;transition:opacity .3s">✔ Salvo</div>
-          <div id="proj-msg-history" style="margin-top:8px"></div>
+
+          <!-- Assunto -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">ASSUNTO</div>
+            <input id="ep-subj" type="text" placeholder="Ex: Atualização importante do projeto"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+          </div>
+
+          <!-- Mensagem -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">MENSAGEM</div>
+            <textarea id="ep-msg" rows="3" placeholder="Digite a mensagem que será enviada..."
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:none;box-sizing:border-box;line-height:1.5"></textarea>
+          </div>
+
+          <!-- Botão enviar -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onclick="epSendManual()"
+              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:8px 18px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;box-shadow:0 0 10px #f5a80033">
+              🚀 Enviar
+            </button>
+            <span id="ep-send-status" style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif"></span>
+          </div>
         </div>
 
       </div>
     </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th><th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th><th>Status</th><th>📎 Anexo</th><th></th></tr></thead>
+        <tbody id="proj-tbody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:11px;flex-wrap:wrap;align-items:center">
+      <button class="btn-primary" onclick="addRow()">➕ Nova Linha</button>
+      <div class="legend" id="proj-leg"></div>
+    </div>
+
+
+ 
     <!-- EMAIL SECTION - só para sênior, renderizado via JS -->
     <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
       <!-- Linha header -->
