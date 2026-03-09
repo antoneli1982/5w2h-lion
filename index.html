@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
 :root{
   --p4:#0d0d0d;--p3:#111111;--p2:#1a1a1a;--p1:#232323;--p0:#2c2c2c;
   --green:#f5a800;--green2:#e09600;--greengl:#f5a80033;
@@ -22,7 +23,7 @@ body{font-family:'Inter',sans-serif;background:var(--p4);color:var(--white)}
 @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
 .fade-in{animation:fadeIn .3s ease forwards}
 .screen{display:none}
-.screen.active{display:flex}
+.screen.active{display:flex;width:100%;height:100%;min-height:0}
 
 
 .photo-upload-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:18px}
@@ -96,7 +97,7 @@ body{font-family:'Inter',sans-serif;background:var(--p4);color:var(--white)}
 .senior-note{background:#f59e0b11;border:1px solid #f59e0b33;color:var(--warn);border-radius:8px;padding:8px 12px;font-size:11px;margin-top:10px;display:none}
 
 /* ── APP SHELL ── */
-#screen-app{flex-direction:row}
+#screen-app{flex-direction:row;width:100%;height:100vh;overflow:hidden}
 .sidebar{
   width:255px;min-width:255px;background:var(--p2);
   border-right:1px solid #f5a80015;display:flex;flex-direction:column;
@@ -273,211 +274,221 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
    Celular: <768px
 ═══════════════════════════════════════════════════ */
 
-/* ── TABLET ─────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET + CELULAR
+═══════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════════════════════
-   RESPONSIVE COMPLETO — TABLET (≤1024px)
-══════════════════════════════════════════════════════════ */
-
-/* ══ TABLET (≤1024px) ══ */
-
-/* ════════════════════════════════════════
-   TABLET  ≤ 1024px
-════════════════════════════════════════ */
-
-/* ════════════════════════════════════════════
-   TABLET  768px – 1024px
-════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════
-   TABLET  769px – 1024px
-═══════════════════════════════════════ */
+/* TABLET 769–1024px */
 @media (max-width:1024px){
   .sidebar{ width:200px; min-width:200px; }
-  .content{ padding:16px; }
 }
 
-/* ═══════════════════════════════════════
-   MOBILE  ≤ 768px
-═══════════════════════════════════════ */
+/* CELULAR ≤ 768px */
 @media (max-width:768px){
 
-  /* Telas de auth rolam normalmente */
+  /* Auth: scroll normal */
   #screen-login,
   #screen-register,
   #screen-edit-profile {
     display:block !important;
     overflow-y:auto !important;
-    height:100vh !important;
-    padding:16px !important;
+    min-height:100vh !important;
+  }
+  .auth-card{
+    width:96% !important;
+    margin:12px auto !important;
+    padding:22px 14px !important;
+    max-width:440px !important;
   }
 
-  /* ── Layout principal ── */
-  #screen-app {
+  /* App: coluna empilhada */
+  #screen-app{
     flex-direction:column !important;
+    height:100svh !important;
     height:100vh !important;
     overflow:hidden !important;
+    width:100% !important;
   }
 
-  /* ── Conteúdo: ocupa todo espaço disponível e rola ── */
-  .main {
-    flex:1 1 0 !important;
+  /* Conteúdo principal rola */
+  .main{
+    flex:1 1 0px !important;
     min-height:0 !important;
     overflow-y:auto !important;
     overflow-x:hidden !important;
-    display:flex !important;
-    flex-direction:column !important;
     -webkit-overflow-scrolling:touch !important;
+    width:100% !important;
   }
 
-  /* ── Topbar ── */
-  .topbar {
-    padding:8px 12px !important;
-    flex-wrap:wrap !important;
+  /* Topbar compacta */
+  .topbar{
+    padding:8px 10px !important;
     gap:6px !important;
+    flex-wrap:wrap !important;
     flex-shrink:0 !important;
+    min-height:unset !important;
   }
-  #tb-title { font-size:12px !important; }
-  .topbar-badge { font-size:9px !important; padding:2px 8px !important; }
-  .view-tabs { gap:4px !important; overflow-x:auto !important; flex-wrap:nowrap !important; }
-  .view-tab { font-size:9px !important; padding:4px 10px !important; white-space:nowrap !important; }
+  #tb-title{ font-size:12px !important; }
+  .topbar-badge{ font-size:9px !important; padding:2px 7px !important; }
+  .view-tabs{ gap:3px !important; overflow-x:auto !important; }
+  .view-tab{ font-size:9px !important; padding:4px 10px !important; white-space:nowrap !important; }
 
-  /* ── Conteúdo interno ── */
-  .content { padding:10px !important; }
+  /* Padding do conteúdo */
+  .content{ padding:10px !important; }
 
-  /* ── Sidebar vira barra de navegação no topo ── */
-  .sidebar {
+  /* ─── SIDEBAR vira barra de navegação no topo ─── */
+  .sidebar{
     order:-1 !important;
     width:100% !important;
-    min-width:unset !important;
+    min-width:100% !important;
     height:auto !important;
-    max-height:none !important;
-    position:relative !important;
+    max-height:unset !important;
+    position:static !important;
     flex-direction:column !important;
     border-right:none !important;
     border-bottom:1px solid rgba(255,255,255,.1) !important;
     overflow:visible !important;
+    flex-shrink:0 !important;
   }
-
   /* Esconde logo */
-  .sidebar-logo { display:none !important; }
+  .sidebar-logo{ display:none !important; }
+  /* Títulos de seção escondidos */
+  .sidebar-section{ display:none !important; }
+  /* Projetos da sidebar escondidos (ficam no dashboard) */
+  #sidebar-projs{ display:none !important; }
 
-  /* Usuário compacto */
-  .sidebar-user {
+  /* Usuário compacto em linha */
+  .sidebar-user{
     flex-direction:row !important;
     align-items:center !important;
-    padding:7px 12px !important;
+    padding:6px 10px !important;
     gap:8px !important;
     border-bottom:1px solid rgba(255,255,255,.07) !important;
   }
-  .user-avatar { width:28px !important; height:28px !important; font-size:11px !important; flex-shrink:0 !important; }
-  .user-info { display:flex !important; flex-direction:row !important; align-items:center !important; gap:6px !important; }
-  #s-name { font-size:11px !important; }
-  #s-role { font-size:9px !important; }
+  .user-avatar{
+    width:28px !important; height:28px !important;
+    font-size:10px !important; flex-shrink:0 !important;
+  }
+  .user-info{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    gap:8px !important;
+  }
+  #s-name{ font-size:11px !important; }
+  #s-role{ font-size:9px !important; }
 
-  /* Esconde títulos de seção */
-  .sidebar-section { display:none !important; }
-
-  /* Menu horizontal com scroll */
-  .sidebar-menu {
+  /* Menu horizontal scroll */
+  .sidebar-menu{
     display:flex !important;
     flex-direction:row !important;
     overflow-x:auto !important;
+    overflow-y:hidden !important;
     gap:4px !important;
-    padding:5px 10px !important;
+    padding:5px 8px !important;
     border-bottom:1px solid rgba(255,255,255,.07) !important;
     scrollbar-width:none !important;
     -webkit-overflow-scrolling:touch !important;
-    flex-wrap:nowrap !important;
   }
-  .sidebar-menu::-webkit-scrollbar { display:none !important; }
-  .menu-item {
+  .sidebar-menu::-webkit-scrollbar{ display:none !important; }
+  .menu-item{
     white-space:nowrap !important;
     flex-shrink:0 !important;
     font-size:10px !important;
     padding:5px 12px !important;
     border-radius:99px !important;
+    min-width:unset !important;
   }
 
-  /* Footer horizontal */
-  .sidebar-footer {
+  /* Footer barra horizontal */
+  .sidebar-footer{
     display:flex !important;
     flex-direction:row !important;
     flex-wrap:wrap !important;
     align-items:center !important;
     gap:4px !important;
-    padding:5px 10px !important;
+    padding:5px 8px !important;
   }
-  #sidebar-senior-btn {
+  #sidebar-senior-btn{
     margin-bottom:0 !important;
-    display:block !important;
   }
   #sidebar-senior-btn button,
-  .sidebar-footer button,
-  .btn-logout {
+  #firebase-btn,
+  .sidebar-footer > div > button,
+  .sidebar-footer > button,
+  .btn-logout{
     width:auto !important;
     font-size:9px !important;
-    padding:5px 9px !important;
+    padding:4px 9px !important;
     border-radius:7px !important;
     white-space:nowrap !important;
     margin:0 !important;
   }
-  #firebase-btn { font-size:9px !important; padding:5px 9px !important; }
+  /* os dois botões exportar/importar ficam juntos */
+  .sidebar-footer > div[style*="display:flex;gap:6px"]{
+    gap:4px !important;
+  }
 
-  /* ── Stats ── */
-  .stats-bar { flex-wrap:wrap !important; gap:6px !important; }
-  .stat-pill { padding:6px 10px !important; min-width:65px !important; }
-  .stat-pill .v { font-size:18px !important; }
-  .stat-pill .l { font-size:9px !important; }
+  /* ─── Stats bar ─── */
+  .stats-bar{ flex-wrap:wrap !important; gap:6px !important; }
+  .stat-pill{ padding:7px 10px !important; min-width:62px !important; }
+  .stat-pill .v{ font-size:16px !important; }
+  .stat-pill .l{ font-size:9px !important; }
 
-  /* ── View header ── */
-  .view-header { flex-wrap:wrap !important; gap:6px !important; padding:8px 10px !important; }
-  .view-title { font-size:13px !important; }
-  .btn-back { font-size:10px !important; padding:5px 10px !important; }
+  /* ─── View header ─── */
+  .view-header{ flex-wrap:wrap !important; gap:5px !important; padding:8px 10px !important; }
+  .view-title{ font-size:13px !important; }
+  .btn-back{ font-size:10px !important; padding:5px 10px !important; }
 
-  /* ── Tabela 5W2H: scroll horizontal ── */
-  .table-wrap {
+  /* ─── Tabela 5W2H — scroll horizontal ─── */
+  .table-wrap{
     overflow-x:auto !important;
+    overflow-y:visible !important;
     -webkit-overflow-scrolling:touch !important;
     width:100% !important;
   }
-  table { min-width:600px !important; font-size:11px !important; }
-  th { font-size:9px !important; padding:7px 5px !important; }
-  td { font-size:10px !important; padding:5px 4px !important; }
+  table{ min-width:580px !important; }
+  th{ font-size:9px !important; padding:6px 4px !important; }
+  td{ font-size:10px !important; padding:5px 4px !important; max-width:160px !important; }
 
-  /* ── Cronograma: scroll horizontal ── */
-  .gantt-wrap { overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; }
-  #cron-table { min-width:600px !important; }
+  /* ─── Cronograma — scroll horizontal ─── */
+  .gantt-wrap{ overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; }
+  #cron-table{ min-width:580px !important; }
+  .gantt-toolbar{ flex-wrap:wrap !important; gap:6px !important; padding:10px !important; }
 
-  /* ── Email painel ── */
-  #ep-body-cols { grid-template-columns:1fr !important; }
+  /* ─── Email painel ─── */
+  #ep-body-cols{ grid-template-columns:1fr !important; }
+  #ep-cfg > div{ flex-wrap:wrap !important; }
 
-  /* ── Modais: full bottom sheet ── */
-  .modal-overlay { align-items:flex-end !important; padding:0 !important; }
-  .modal {
+  /* ─── Dashboard ─── */
+  .projects-grid{ grid-template-columns:1fr 1fr !important; gap:8px !important; }
+  .project-card{ padding:10px 10px !important; }
+  .pc-name{ font-size:12px !important; }
+  .scenario-tabs{ flex-wrap:wrap !important; gap:5px !important; }
+  .sc-tab{ font-size:9px !important; padding:5px 12px !important; }
+
+  /* ─── Modais — bottom sheet ─── */
+  .modal-overlay{
+    align-items:flex-end !important;
+    padding:0 !important;
+  }
+  .modal{
     width:100% !important;
     max-width:100% !important;
     max-height:88vh !important;
-    border-radius:14px 14px 0 0 !important;
+    border-radius:16px 16px 0 0 !important;
     overflow-y:auto !important;
     margin:0 !important;
+    padding:22px 16px !important;
   }
-
-  /* ── Dashboard cards ── */
-  .projects-grid,
-  .dash-grid { grid-template-columns:1fr 1fr !important; gap:8px !important; }
-  .project-card { padding:10px !important; }
-  .pc-name { font-size:12px !important; }
 }
 
-/* ═══════════════════════════════════════
-   MOBILE PEQUENO  ≤ 420px
-═══════════════════════════════════════ */
+/* CELULAR PEQUENO ≤ 420px */
 @media (max-width:420px){
-  .projects-grid,
-  .dash-grid { grid-template-columns:1fr !important; }
-  .auth-card { padding:20px 14px !important; }
-  table { min-width:540px !important; }
+  .projects-grid{ grid-template-columns:1fr !important; }
+  .auth-card{ padding:18px 12px !important; }
+  table{ min-width:520px !important; }
+  .sidebar-footer{ padding:4px 6px !important; }
 }
 
 </style>
