@@ -818,246 +818,143 @@ function openProject(id,view){
 // 5W2H VIEW
 // ══════════════════════════════════════════
 function renderProject(p){
-  const t=p.rows.length,d=p.rows.filter(r=>r.status===100).length;
+  const t=p.rows.length, d=p.rows.filter(r=>r.status===100).length;
   const avg=t?Math.round(p.rows.reduce((a,r)=>a+r.status,0)/t):0;
-  document.getElementById('main-content').innerHTML=`<div class="fade-in">
-    <div class="view-header">
-      <button class="btn-back" onclick="showDashboard()">← Voltar</button>
-      <div class="view-title">${p.name}</div>
-      <div class="view-tabs">
-        <button class="view-tab active" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
-        <button class="view-tab cron" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
-      </div>
+  document.getElementById('main-content').innerHTML=`
+<div class="fade-in">
+  <div class="view-header">
+    <button class="btn-back" onclick="showDashboard()">← Voltar</button>
+    <div class="view-title">${p.name}</div>
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="openProject(${p.id},'5w2h')">📋 5W2H</button>
+      <button class="view-tab cron"   onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
     </div>
-    <div class="stats-bar">
-      <div class="stat-pill"><div class="v" style="color:var(--green)">${t}</div><div class="l">Ações</div></div>
-      <div class="stat-pill"><div class="v" style="color:var(--success)">${d}</div><div class="l">Concluídas</div></div>
-      <div class="gbar-wrap"><div class="gbar-track"><div class="gbar-fill" style="width:${avg}%"></div></div><div class="gbar-pct">${avg}%</div></div>
-    </div>
-    <!-- EMAIL SECTION - só para sênior, renderizado via JS -->
-    <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
-      <!-- Linha header -->
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f5a80033">
-        <div style="width:3px;height:16px;background:#f5a800;border-radius:2px;flex-shrink:0"></div>
-        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;text-transform:uppercase;letter-spacing:.5px">Notificações</span>
-        <span id="ep-count" style="background:#1a1200;border:1px solid #f5a80033;color:#f5a800;border-radius:99px;padding:1px 9px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0</span>
-        <div style="flex:1"></div>
-        <button onclick="toggleEpConfig()" style="font-size:10px;color:var(--gray);background:transparent;border:1px solid #ffffff15;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">⚙️ EmailJS</button>
-      </div>
+  </div>
 
-      <!-- Config box (colapsável) -->
-      <div id="ep-cfg" style="display:none;padding:12px 16px;border-bottom:1px solid #f5a80033;background:#1a1200">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700">CHAVES EMAILJS</span>
-          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);border:1px solid #ffffff15;border-radius:4px;padding:1px 6px;text-decoration:none;font-family:Montserrat,sans-serif">criar conta grátis ↗</a>
-          <span style="margin-left:auto;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">200 e-mails/mês grátis</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">SERVICE ID</div>
-            <input id="ep-svc" type="text" placeholder="service_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">TEMPLATE ID</div>
-            <input id="ep-tpl" type="text" placeholder="template_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">PUBLIC KEY</div>
-            <input id="ep-pub" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
-        </div>
-        <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;padding:6px 8px;background:var(--p2);border-radius:5px">
-          Use no template: <span style="color:#f5a800">{{to_email}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{project}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{from_name}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{mensagem}}</span>
-        </div>
-      </div>
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="v" style="color:var(--green)">${t}</div><div class="l">Ações</div></div>
+    <div class="stat-pill"><div class="v" style="color:var(--success)">${d}</div><div class="l">Concluídas</div></div>
+    <div class="gbar-wrap"><div class="gbar-track"><div class="gbar-fill" style="width:${avg}%"></div></div><div class="gbar-pct">${avg}%</div></div>
+  </div>
 
-      <!-- Corpo: 2 colunas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+  <!-- PAINEL EMAIL: visível só para Sênior via epRender() -->
+  <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
 
-        <!-- Col 1: destinatários -->
-        <div style="padding:12px 16px;border-right:1px solid #f5a80033">
-          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📧 Destinatários de e-mail</div>
-          <div id="ep-chips" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
-          <div style="display:flex;gap:6px">
-            <input id="ep-newemail" type="email" placeholder="email@empresa.com"
-              style="flex:1;min-width:0;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:6px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none"
-              onkeydown="if(event.key==='Enter')epAddEmail()">
-            <button onclick="epAddEmail()"
-              style="background:#f5a800;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">➕</button>
-          </div>
-          <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático 3s após qualquer edição</div>
-        </div>
-
-        <!-- Col 2: envio de mensagem por e-mail -->
-        <div style="padding:12px 16px">
-          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">✉️ Enviar Mensagem por E-mail</div>
-
-          <!-- Destinatário: todos ou específico -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">PARA</div>
-            <select id="ep-to"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
-              <option value="__all__">📢 Todos os destinatários</option>
-            </select>
-          </div>
-
-          <!-- Assunto -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">ASSUNTO</div>
-            <input id="ep-subj" type="text" placeholder="Ex: Atualização importante do projeto"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
-          </div>
-
-          <!-- Mensagem -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">MENSAGEM</div>
-            <textarea id="ep-msg" rows="3" placeholder="Digite a mensagem que será enviada..."
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:none;box-sizing:border-box;line-height:1.5"></textarea>
-          </div>
-
-          <!-- Botão enviar -->
-          <div style="display:flex;align-items:center;gap:10px">
-            <button onclick="epSendManual()"
-              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:8px 18px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;box-shadow:0 0 10px #f5a80033">
-              🚀 Enviar
-            </button>
-            <span id="ep-send-status" style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif"></span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th><th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th><th>Status</th><th>📎 Anexo</th><th></th></tr></thead>
-        <tbody id="proj-tbody"></tbody>
-      </table>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:11px;flex-wrap:wrap;align-items:center">
-      <button class="btn-primary" onclick="addRow()">➕ Nova Linha</button>
-      <div class="legend" id="proj-leg"></div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f5a80033">
+      <div style="width:3px;height:16px;background:#f5a800;border-radius:2px;flex-shrink:0"></div>
+      <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;text-transform:uppercase;letter-spacing:.5px">Notificações</span>
+      <span id="ep-count" style="background:#1a1200;border:1px solid #f5a80033;color:#f5a800;border-radius:99px;padding:1px 9px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0 e-mails</span>
+      <div style="flex:1"></div>
+      <button onclick="toggleEpConfig()" style="font-size:10px;color:var(--gray);background:transparent;border:1px solid #ffffff15;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">⚙️ EmailJS</button>
     </div>
 
+    <!-- Config EmailJS (colapsável) -->
+    <div id="ep-cfg" style="display:none;padding:12px 16px;border-bottom:1px solid #f5a80033;background:#1a1200">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700">CHAVES EMAILJS</span>
+        <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);border:1px solid #ffffff15;border-radius:4px;padding:1px 6px;text-decoration:none;font-family:Montserrat,sans-serif">criar conta grátis ↗</a>
+        <span style="margin-left:auto;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">200 e-mails/mês grátis</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">SERVICE ID</div>
+          <input id="ep-svc" type="text" placeholder="service_xxxxxxx" oninput="epSaveCfg()"
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">TEMPLATE ID</div>
+          <input id="ep-tpl" type="text" placeholder="template_xxxxxxx" oninput="epSaveCfg()"
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">PUBLIC KEY</div>
+          <input id="ep-pub" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx" oninput="epSaveCfg()"
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;padding:6px 8px;background:var(--p2);border-radius:5px">
+        Vars no template: <span style="color:#f5a800">{{to_email}}</span> &nbsp;·&nbsp;
+        <span style="color:#f5a800">{{project}}</span> &nbsp;·&nbsp;
+        <span style="color:#f5a800">{{from_name}}</span> &nbsp;·&nbsp;
+        <span style="color:#f5a800">{{assunto}}</span> &nbsp;·&nbsp;
+        <span style="color:#f5a800">{{mensagem}}</span>
+      </div>
+    </div>
 
- 
-    <!-- EMAIL SECTION - só para sênior, renderizado via JS -->
-    <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
-      <!-- Linha header -->
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f5a80033">
-        <div style="width:3px;height:16px;background:#f5a800;border-radius:2px;flex-shrink:0"></div>
-        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;text-transform:uppercase;letter-spacing:.5px">Notificações</span>
-        <span id="ep-count" style="background:#1a1200;border:1px solid #f5a80033;color:#f5a800;border-radius:99px;padding:1px 9px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0</span>
-        <div style="flex:1"></div>
-        <button onclick="toggleEpConfig()" style="font-size:10px;color:var(--gray);background:transparent;border:1px solid #ffffff15;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">⚙️ EmailJS</button>
+    <!-- Corpo: 2 colunas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+
+      <!-- Col 1: cadastrar destinatários -->
+      <div style="padding:14px 16px;border-right:1px solid #f5a80033">
+        <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">📧 Destinatários</div>
+        <div id="ep-chips" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-height:20px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="ep-newemail" type="email" placeholder="email@empresa.com"
+            style="flex:1;min-width:0;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 10px;font-size:12px;font-family:Montserrat,sans-serif;outline:none"
+            onkeydown="if(event.key==='Enter')epAddEmail()">
+          <button onclick="epAddEmail()"
+            style="background:#f5a800;color:#111111;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;flex-shrink:0">➕</button>
+        </div>
+        <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático enviado 3s após qualquer edição</div>
       </div>
 
-      <!-- Config box (colapsável) -->
-      <div id="ep-cfg" style="display:none;padding:12px 16px;border-bottom:1px solid #f5a80033;background:#1a1200">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700">CHAVES EMAILJS</span>
-          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);border:1px solid #ffffff15;border-radius:4px;padding:1px 6px;text-decoration:none;font-family:Montserrat,sans-serif">criar conta grátis ↗</a>
-          <span style="margin-left:auto;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">200 e-mails/mês grátis</span>
+      <!-- Col 2: enviar mensagem manual -->
+      <div style="padding:14px 16px">
+        <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">✉️ Enviar Mensagem</div>
+
+        <div style="margin-bottom:8px">
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">PARA</div>
+          <select id="ep-to"
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
+            <option value="__all__">📢 Todos os destinatários</option>
+          </select>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">SERVICE ID</div>
-            <input id="ep-svc" type="text" placeholder="service_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">TEMPLATE ID</div>
-            <input id="ep-tpl" type="text" placeholder="template_xxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">PUBLIC KEY</div>
-            <input id="ep-pub" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
-              oninput="epSaveCfg()">
-          </div>
+
+        <div style="margin-bottom:8px">
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">ASSUNTO</div>
+          <input id="ep-subj" type="text" placeholder="Ex: Atualização do projeto"
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
         </div>
-        <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;padding:6px 8px;background:var(--p2);border-radius:5px">
-          Use no template: <span style="color:#f5a800">{{to_email}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{project}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{from_name}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{mensagem}}</span>
+
+        <div style="margin-bottom:10px">
+          <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">MENSAGEM</div>
+          <textarea id="ep-msg" rows="3" placeholder="Digite a mensagem..."
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:none;box-sizing:border-box;line-height:1.5"></textarea>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="epSendManual()"
+            style="background:#f5a800;color:#111111;border:none;border-radius:7px;padding:8px 20px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">
+            🚀 Enviar
+          </button>
+          <span id="ep-send-status" style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif"></span>
         </div>
       </div>
 
-      <!-- Corpo: 2 colunas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-
-        <!-- Col 1: destinatários -->
-        <div style="padding:12px 16px;border-right:1px solid #f5a80033">
-          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📧 Destinatários de e-mail</div>
-          <div id="ep-chips" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
-          <div style="display:flex;gap:6px">
-            <input id="ep-newemail" type="email" placeholder="email@empresa.com"
-              style="flex:1;min-width:0;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:6px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none"
-              onkeydown="if(event.key==='Enter')epAddEmail()">
-            <button onclick="epAddEmail()"
-              style="background:#f5a800;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">➕</button>
-          </div>
-          <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático 3s após qualquer edição</div>
-        </div>
-
-        <!-- Col 2: envio de mensagem por e-mail -->
-        <div style="padding:12px 16px">
-          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">✉️ Enviar Mensagem por E-mail</div>
-
-          <!-- Destinatário: todos ou específico -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">PARA</div>
-            <select id="ep-to"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
-              <option value="__all__">📢 Todos os destinatários</option>
-            </select>
-          </div>
-
-          <!-- Assunto -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">ASSUNTO</div>
-            <input id="ep-subj" type="text" placeholder="Ex: Atualização importante do projeto"
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box">
-          </div>
-
-          <!-- Mensagem -->
-          <div style="margin-bottom:8px">
-            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:600;margin-bottom:4px">MENSAGEM</div>
-            <textarea id="ep-msg" rows="3" placeholder="Digite a mensagem que será enviada..."
-              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:none;box-sizing:border-box;line-height:1.5"></textarea>
-          </div>
-
-          <!-- Botão enviar -->
-          <div style="display:flex;align-items:center;gap:10px">
-            <button onclick="epSendManual()"
-              style="background:#f5a800;color:#111;border:none;border-radius:7px;padding:8px 18px;font-size:11px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif;box-shadow:0 0 10px #f5a80033">
-              🚀 Enviar
-            </button>
-            <span id="ep-send-status" style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif"></span>
-          </div>
-        </div>
-
-      </div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th><th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th><th>Status</th><th>📎 Anexo</th><th></th></tr></thead>
-        <tbody id="proj-tbody"></tbody>
-      </table>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:11px;flex-wrap:wrap;align-items:center">
-      <button class="btn-primary" onclick="addRow()">➕ Nova Linha</button>
-      <div class="legend" id="proj-leg"></div>
-    </div>
+  </div>
+  <!-- FIM PAINEL EMAIL -->
 
+  <!-- Tabela 5W2H -->
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th>
+        <th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th>
+        <th>Status</th><th>📎 Anexo</th><th></th>
+      </tr></thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+  </div>
 
-  `;
+  <div style="display:flex;gap:10px;margin-top:11px;flex-wrap:wrap;align-items:center">
+    <button class="btn-primary" onclick="addRow()">➕ Nova Linha</button>
+    <div class="legend" id="proj-leg"></div>
+  </div>
+
+</div>
+\`;
   renderRows(p);buildLegend();epRender(p);
 }
 
