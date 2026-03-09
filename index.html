@@ -797,6 +797,8 @@ function doLogin(){
   }
   session.user=found;
   session.dashSc=found.role==='fin'?'fin':'op';
+  // Auto-session: save logged user so page refresh keeps session
+  try{ localStorage.setItem('lion_remember_session', JSON.stringify({user:found.user,pass:found.pass})); }catch(e){}
   // update sidebar
   const av=document.getElementById('s-avatar');
   av.className='user-avatar'+(found.role==='senior'?' senior':found.role==='fin'?' fin':'');
@@ -817,7 +819,7 @@ function doLogin(){
   showDashboard();
 }
 function doLogout(){
-  session.user=null;
+  session.user=null; try{localStorage.removeItem('lion_remember_session');}catch(e){}
   showScreen('screen-login');
   // Only clear fields if not remembered
   const saved=localStorage.getItem('lion_remember');
@@ -969,6 +971,17 @@ function openProject(id,view){
   const p=db.projects.find(x=>x.id===id);if(!p)return;
   setActive('mi-p'+id);renderSidebar();
   document.getElementById('tb-title').textContent=p.name;
+  // Populate email recipient select with individual options
+  (function(){
+    var sel=document.getElementById('ep-to'); if(!sel) return;
+    var emails=p.emails||[];
+    sel.innerHTML='<option value="__all__">📢 Todos os destinatários</option>';
+    emails.forEach(function(em){
+      var opt=document.createElement('option');
+      opt.value=em; opt.textContent='✉️ '+em;
+      sel.appendChild(opt);
+    });
+  })();
   document.getElementById('tb-badge').innerHTML=p.sc==='fin'
     ?'<span class="topbar-badge badge-fin">💰 Financeiro</span>'
     :'<span class="topbar-badge badge-op">🔵 Operacional</span>';
@@ -1704,6 +1717,26 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
       document.getElementById('l-remember').checked=true;
     }
   }catch(e){localStorage.removeItem('lion_remember');}
+  // Auto-login: restore session on page refresh
+  try{
+    const sess=localStorage.getItem('lion_remember_session');
+    if(sess){
+      const creds=JSON.parse(sess);
+      function tryAutoLogin(){
+        const found=db.users.find(function(u){return u.user.toLowerCase()===creds.user.toLowerCase()&&u.pass===creds.pass;});
+        if(found&&found.status==='approved'){
+          session.user=found;
+          session.dashSc=found.role==='fin'?'fin':found.role==='cli'?'cli':'op';
+          document.getElementById('screen-login').classList.remove('active');
+          document.getElementById('screen-app').classList.add('active');
+          renderSidebar();
+          console.log('[AutoLogin] restaurado:',found.user);
+        }
+      }
+      tryAutoLogin();
+      if(!session.user&&window._fbLoad){window._fbLoad(function(){tryAutoLogin();});}
+    }
+  }catch(e){localStorage.removeItem('lion_remember_session');}
 })();
 </script>
 
