@@ -876,12 +876,6 @@ function renderProject(p){
         </button>
       </div>
     </div>
-    <!-- ██ PAINEL NOTIFICAÇÕES ██ -->
-    <div id="notif-panel" style="display:none;margin-bottom:16px">
-
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="background:#f5a800;width:3px;height:20px;border-radius:2px"></div>
         <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;color:#f5a800">NOTIFICAÇÕES</span>
         <span id="notif-email-count" style="background:#1a1200;border:1px solid #f5a80044;color:#f5a800;border-radius:99px;padding:1px 10px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0 e-mails</span>
         <div style="flex:1"></div>
@@ -967,6 +961,77 @@ function renderProject(p){
 
       </div>
     </div>
+    <!-- EMAIL SECTION - só para sênior, renderizado via JS -->
+    <div id="ep-wrap" style="display:none;margin-bottom:14px;background:var(--p2);border:1px solid #f5a80033;border-radius:12px;overflow:hidden">
+      <!-- Linha header -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f5a80033">
+        <div style="width:3px;height:16px;background:#f5a800;border-radius:2px;flex-shrink:0"></div>
+        <span style="font-family:Montserrat,sans-serif;font-weight:800;font-size:12px;color:#f5a800;text-transform:uppercase;letter-spacing:.5px">Notificações</span>
+        <span id="ep-count" style="background:#1a1200;border:1px solid #f5a80033;color:#f5a800;border-radius:99px;padding:1px 9px;font-size:10px;font-family:Montserrat,sans-serif;font-weight:700">0</span>
+        <div style="flex:1"></div>
+        <button onclick="toggleEpConfig()" style="font-size:10px;color:var(--gray);background:transparent;border:1px solid #ffffff15;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:Montserrat,sans-serif;font-weight:700">⚙️ EmailJS</button>
+      </div>
+
+      <!-- Config box (colapsável) -->
+      <div id="ep-cfg" style="display:none;padding:12px 16px;border-bottom:1px solid #f5a80033;background:#1a1200">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:10px;color:#f5a800;font-family:Montserrat,sans-serif;font-weight:700">CHAVES EMAILJS</span>
+          <a href="https://www.emailjs.com" target="_blank" style="font-size:9px;color:var(--gray);border:1px solid #ffffff15;border-radius:4px;padding:1px 6px;text-decoration:none;font-family:Montserrat,sans-serif">criar conta grátis ↗</a>
+          <span style="margin-left:auto;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">200 e-mails/mês grátis</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">SERVICE ID</div>
+            <input id="ep-svc" type="text" placeholder="service_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">TEMPLATE ID</div>
+            <input id="ep-tpl" type="text" placeholder="template_xxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:3px">PUBLIC KEY</div>
+            <input id="ep-pub" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx"
+              style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;box-sizing:border-box"
+              oninput="epSaveCfg()">
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;padding:6px 8px;background:var(--p2);border-radius:5px">
+          Use no template: <span style="color:#f5a800">{{to_email}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{project}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{from_name}}</span> &nbsp;·&nbsp; <span style="color:#f5a800">{{mensagem}}</span>
+        </div>
+      </div>
+
+      <!-- Corpo: 2 colunas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+
+        <!-- Col 1: destinatários -->
+        <div style="padding:12px 16px;border-right:1px solid #f5a80033">
+          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📧 Destinatários de e-mail</div>
+          <div id="ep-chips" style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px"></div>
+          <div style="display:flex;gap:6px">
+            <input id="ep-newemail" type="email" placeholder="email@empresa.com"
+              style="flex:1;min-width:0;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:6px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none"
+              onkeydown="if(event.key==='Enter')epAddEmail()">
+            <button onclick="epAddEmail()"
+              style="background:#f5a800;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">➕</button>
+          </div>
+          <div style="margin-top:6px;font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif">⚡ E-mail automático 3s após qualquer edição</div>
+        </div>
+
+        <!-- Col 2: mensagem interna -->
+        <div style="padding:12px 16px">
+          <div style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">💬 Mensagem interna do projeto</div>
+          <textarea id="ep-msg" rows="3" placeholder="Recados, observações ou contexto para quem acessar este projeto..."
+            style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.5"
+            oninput="epSaveMsg()"></textarea>
+          <div id="ep-msg-ok" style="font-size:9px;color:var(--gray);font-family:Montserrat,sans-serif;margin-top:4px;text-align:right;opacity:0;transition:opacity .3s">✔ salvo</div>
+        </div>
+
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Ação</th><th>What (O que)</th><th>Why (Por quê)</th><th>Where (Onde)</th><th>When (Quando)</th><th>Who (Quem)</th><th>How (Como)</th><th>How Much</th><th>Status</th><th>📎 Anexo</th><th></th></tr></thead>
@@ -980,7 +1045,7 @@ function renderProject(p){
 
 
   `;
-  renderRows(p);buildLegend();renderNotifPanel(p);
+  renderRows(p);buildLegend();epRender(p);
 }
 
 function renderRows(p){
@@ -998,7 +1063,7 @@ function renderRows(p){
     const sel=document.createElement('select');sel.className='ss';
     sel.style.color=STATUS[row.status].text;sel.style.border='1.5px solid '+STATUS[row.status].text;
     [0,25,50,75,100].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+'% — '+STATUS[v].label;if(v===row.status)o.selected=true;sel.appendChild(o);});
-    sel.onchange=e=>{row.status=Number(e.target.value);saveDB();notifyProjectUpdate(p);renderProject(p);};
+    sel.onchange=e=>{row.status=Number(e.target.value);saveDB();epNotify(p);renderProject(p);};
     const bw=document.createElement('div');bw.className='sbar-wrap';
     const b=document.createElement('div');b.className='sbar';
     b.style.width=row.status+'%';b.style.background=STATUS[row.status].text;b.style.boxShadow='0 0 5px '+STATUS[row.status].text;
@@ -1016,7 +1081,7 @@ function renderRows(p){
       const btnRem=document.createElement('button');
       btnRem.style.cssText='background:#2a0808;color:#ef4444;border:1px solid #ef444433;border-radius:5px;font-size:9px;padding:2px 6px;cursor:pointer;font-family:Montserrat,sans-serif';
       btnRem.textContent='✕ remover';
-      btnRem.onclick=()=>{row.anexo=null;row.anexoNome='';row.anexoTipo='';saveDB();notifyProjectUpdate(p);renderProject(p);};
+      btnRem.onclick=()=>{row.anexo=null;row.anexoNome='';row.anexoTipo='';saveDB();epNotify(p);renderProject(p);};
       anexoWrap.appendChild(nm);anexoWrap.appendChild(btnRem);
     } else {
       // Sem anexo: botão de upload
@@ -1042,7 +1107,7 @@ function renderRows(p){
     const tdA=document.createElement('td');tdA.className='td-act';
     const w=document.createElement('div');w.style.cssText='display:flex;gap:4px;justify-content:center';
     const bc=document.createElement('button');bc.className='btn btn-clr';bc.textContent='🧹';
-    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;saveDB();notifyProjectUpdate(p);renderProject(p);};
+    bc.onclick=()=>{FIELDS.forEach(f=>row[f]='');row.status=0;saveDB();epNotify(p);renderProject(p);};
     const bd=document.createElement('button');bd.className='btn btn-dr';bd.textContent='🗑️';
     bd.onclick=()=>{session.delRowTarget={pid:p.id,rid:row.id};openModal('modal-del-row');};
     w.appendChild(bc);w.appendChild(bd);tdA.appendChild(w);tr.appendChild(tdA);
@@ -1053,8 +1118,8 @@ function startCellEdit(td,p,rowId,field){
   const row=p.rows.find(r=>r.id===rowId);
   const ta=document.createElement('textarea');ta.className='ie';ta.value=row[field]||'';
   td.textContent='';td.appendChild(ta);ta.focus();
-  ta.onblur=()=>{row[field]=ta.value;saveDB();notifyProjectUpdate(p);renderRows(p);};
-  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();notifyProjectUpdate(p);renderRows(p);}};
+  ta.onblur=()=>{row[field]=ta.value;saveDB();epNotify(p);renderRows(p);};
+  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();epNotify(p);renderRows(p);}};
 }
 function addRow(){
   const p=db.projects.find(x=>x.id===session.projId);if(!p)return;
@@ -1207,7 +1272,7 @@ function editCronCell(td,pid,gid,field){
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
-  const save=()=>{row[field]=inp.value;saveDB();notifyProjectUpdate(p);renderCronRows(p);};
+  const save=()=>{row[field]=inp.value;saveDB();epNotify(p);renderCronRows(p);};
   inp.onblur=save;
   inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}};
 }
@@ -1215,7 +1280,7 @@ function editCronCell(td,pid,gid,field){
 function updateCronStatus(pid,gid,val){
   const p=db.projects.find(x=>x.id===pid);
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
-  if(row){row.status=Number(val);saveDB();notifyProjectUpdate(p);renderCronRows(p);}
+  if(row){row.status=Number(val);saveDB();epNotify(p);renderCronRows(p);}
 }
 
 function openAddCronForm(pid){
@@ -1652,66 +1717,7 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
 </div>
 
 
-<script>
-// ── SERVICE WORKER — registro e atualização automática ──
-// ── FUNÇÕES DE ANEXO ──────────────────────────────────────────────────
-function getAnexoIcon(tipo){
-  if(!tipo) return '📎';
-  if(tipo.startsWith('image/')) return '🖼️';
-  if(tipo==='application/pdf') return '📄';
-  if(tipo.includes('word') || tipo.includes('document')) return '📝';
-  if(tipo.includes('excel') || tipo.includes('sheet')) return '📊';
-  if(tipo.includes('powerpoint') || tipo.includes('presentation')) return '📋';
-  if(tipo.includes('zip') || tipo.includes('rar')) return '🗜️';
-  return '📎';
-}
 
-function abrirAnexo(data, nome, tipo){
-  if(!data) return;
-  if(tipo && tipo.startsWith('image/')){
-    // Imagem: abre modal de preview
-    let m=document.getElementById('_anx_modal');
-    if(!m){
-      m=document.createElement('div');m.id='_anx_modal';
-      m.style.cssText='position:fixed;inset:0;background:#000c;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:16px';
-      m.onclick=e=>{if(e.target===m)m.remove();};
-      document.body.appendChild(m);
-    }
-    m.innerHTML='';
-    const img=document.createElement('img');img.src=data;
-    img.style.cssText='max-width:90vw;max-height:80vh;border-radius:10px;box-shadow:0 0 40px #0008';
-    const nm=document.createElement('div');nm.style.cssText='color:#fff;font-size:12px;font-family:Montserrat,sans-serif';nm.textContent=nome;
-    const dl=document.createElement('a');dl.href=data;dl.download=nome;
-    dl.style.cssText='color:var(--green);font-size:12px;font-family:Montserrat,sans-serif;font-weight:700;text-decoration:none;padding:6px 16px;border:1px solid var(--greengl);border-radius:8px';
-    dl.textContent='⬇️ Baixar';
-    const cls=document.createElement('button');
-    cls.style.cssText='background:transparent;color:#aaa;border:none;font-size:20px;cursor:pointer;position:absolute;top:16px;right:20px';
-    cls.textContent='✕';cls.onclick=()=>m.remove();
-    m.appendChild(cls);m.appendChild(img);m.appendChild(nm);m.appendChild(dl);
-  } else {
-    // Outros arquivos: baixar direto
-    const a=document.createElement('a');a.href=data;a.download=nome;a.click();
-  }
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => {
-    reg.update();
-    reg.addEventListener('updatefound', () => {
-      const newSW = reg.installing;
-      newSW.addEventListener('statechange', () => {
-        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          newSW.postMessage('skipWaiting');
-        }
-      });
-    });
-  });
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
-  });
-}
-</script>
 <script>
 
   // ── SYNC CONSTANTS ──
@@ -1774,265 +1780,140 @@ function showToast(msg) {
 }
 
 </script>
-<script>
-// ── E-MAIL / EMAILJS FUNCTIONS ────────────────────────────────────────────
-function saveEmailjsConfig(pid){
-  const p=db.projects.find(x=>x.id===pid);if(!p)return;
-  if(!p.emailjsConfig)p.emailjsConfig={};
-  p.emailjsConfig.serviceId  = (document.getElementById('ejs-service') ||{}).value||'';
-  p.emailjsConfig.templateId = (document.getElementById('ejs-template')||{}).value||'';
-  p.emailjsConfig.publicKey  = (document.getElementById('ejs-pubkey')  ||{}).value||'';
-  saveDB();
-}
 
-function addEmailToProject(pid){
-  const inp=document.getElementById('new-email-input');
-  if(!inp)return;
-  const em=inp.value.trim().toLowerCase();
-  if(!em||!/^[^@]+@[^@]+\.[^@]+$/.test(em)){
-    showToast('❌ E-mail inválido!');return;
-  }
-  const p=db.projects.find(x=>x.id===pid);if(!p)return;
-  if(!p.emails)p.emails=[];
-  if(p.emails.includes(em)){showToast('⚠️ E-mail já cadastrado!');return;}
-  p.emails.push(em);
-  saveDB();
-  inp.value='';
-  renderProject(p);
-  showToast('✅ E-mail adicionado!');
-}
 
-function removeEmail(pid,idx){
-  const p=db.projects.find(x=>x.id===pid);if(!p||!p.emails)return;
-  const em=p.emails[idx];
-  p.emails.splice(idx,1);
-  saveDB();
-  renderProject(p);
-  showToast('🗑️ E-mail removido: '+em);
-}
-
-async function enviarNotificacao(pid){
-  const p=db.projects.find(x=>x.id===pid);if(!p)return;
-  const assunto=(document.getElementById('email-assunto')||{}).value?.trim();
-  const msg=(document.getElementById('email-mensagem')||{}).value?.trim();
-  const status=document.getElementById('email-status');
-
-  if(!p.emails||p.emails.length===0){
-    showToast('⚠️ Nenhum destinatário cadastrado!');return;
-  }
-  if(!assunto||!msg){
-    showToast('⚠️ Preencha o assunto e a mensagem!');return;
-  }
-  const cfg=p.emailjsConfig||{};
-  if(!cfg.serviceId||!cfg.templateId||!cfg.publicKey){
-    showToast('⚠️ Configure o EmailJS primeiro!');
-    // Open config guide
-    window.open('https://www.emailjs.com/','_blank');
-    return;
-  }
-
-  if(status){status.textContent='⏳ Enviando...';status.style.color='var(--warn)';}
-
-  try{
-    // Initialize EmailJS with public key
-    emailjs.init(cfg.publicKey);
-
-    const sender=db.users.find(u=>u.user===session.user);
-    const senderName=sender?.nome||session.user||'Sistema 5W2H';
-    const total=p.emails.length;
-    let sent=0,failed=0;
-
-    for(const email of p.emails){
-      try{
-        await emailjs.send(cfg.serviceId, cfg.templateId, {
-          to_email:   email,
-          to_name:    email,
-          from_name:  senderName,
-          project:    p.name,
-          assunto:    assunto,
-          mensagem:   msg,
-          reply_to:   email,
-        });
-        sent++;
-      }catch(e){
-        console.warn('Falha ao enviar para',email,e);
-        failed++;
-      }
-    }
-
-    if(sent===total){
-      if(status){status.textContent=`✅ Enviado para ${sent} destinatário(s)!`;status.style.color='#4ade80';}
-      showToast(`🚀 E-mail enviado para ${sent} destinatário(s)!`);
-      document.getElementById('email-mensagem').value='';
-      document.getElementById('email-assunto').value='';
-    }else{
-      if(status){status.textContent=`⚠️ ${sent} enviados, ${failed} falharam.`;status.style.color='var(--warn)';}
-      showToast(`⚠️ ${sent} enviados, ${failed} com falha.`);
-    }
-  }catch(e){
-    console.error('EmailJS error:',e);
-    if(status){status.textContent='❌ Erro: '+e.text||e.message||'Verifique a configuração EmailJS';status.style.color='#ef4444';}
-    showToast('❌ Erro ao enviar. Verifique a configuração EmailJS.');
-  }
-}
-</script>
-
-function showEmailTab(){
+function {
   const btn = document.getElementById('tab-email-btn');
   if(!btn) return;
   const u = db.users.find(x => x.user === session.user);
   btn.style.display = (u && u.role === 'senior') ? 'inline-block' : 'none';
 }
 </script>
+
+
 <script>
-// ══════════════════════════════════════════════════════
-// NOTIFICAÇÕES v3 — PAINEL INTEGRADO
-// ══════════════════════════════════════════════════════
+// ══ EMAIL & NOTIF — versão limpa ══════════════════════════════
 
-function renderNotifPanel(p) {
-  const panel = document.getElementById('notif-panel');
-  if (!panel) return;
+function epRender(p) {
+  const wrap = document.getElementById('ep-wrap'); if (!wrap) return;
   const u = db.users.find(x => x.user === session.user);
-  const isSenior = u && u.role === 'senior';
-  panel.style.display = isSenior ? 'block' : 'none';
-  if (!isSenior) return;
-
+  if (!u || u.role !== 'senior') { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
   if (!p.emailjsConfig) p.emailjsConfig = {serviceId:'',templateId:'',publicKey:''};
   if (!p.emails) p.emails = [];
   if (!p.internalMsg) p.internalMsg = '';
-
-  // Fill config
-  const svc = document.getElementById('ejs-service');
-  const tpl = document.getElementById('ejs-template');
-  const pub = document.getElementById('ejs-pubkey');
-  if (svc) svc.value = p.emailjsConfig.serviceId || '';
-  if (tpl) tpl.value = p.emailjsConfig.templateId || '';
-  if (pub) pub.value = p.emailjsConfig.publicKey || '';
-
-  // Count
-  const cnt = document.getElementById('notif-email-count');
+  // fill config
+  const s = document.getElementById('ep-svc');
+  const t = document.getElementById('ep-tpl');
+  const k = document.getElementById('ep-pub');
+  if (s) s.value = p.emailjsConfig.serviceId || '';
+  if (t) t.value = p.emailjsConfig.templateId || '';
+  if (k) k.value = p.emailjsConfig.publicKey || '';
+  // count
+  const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
-
-  // Internal message
-  const ta = document.getElementById('proj-internal-msg');
+  // msg
+  const ta = document.getElementById('ep-msg');
   if (ta) ta.value = p.internalMsg || '';
-
-  // Chips
-  _renderEmailChips(p);
+  // chips
+  epChips(p);
 }
 
-function _renderEmailChips(p) {
-  const chips = document.getElementById('email-chips');
-  if (!chips) return;
+function epChips(p) {
+  const chips = document.getElementById('ep-chips'); if (!chips) return;
   chips.innerHTML = '';
   if (!p.emails || p.emails.length === 0) {
-    chips.innerHTML = '<span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Nenhum e-mail cadastrado ainda.</span>';
+    chips.innerHTML = '<span style="font-size:10px;color:var(--gray);font-family:Montserrat,sans-serif">Nenhum e-mail cadastrado.</span>';
     return;
   }
   p.emails.forEach((em, i) => {
-    const chip = document.createElement('div');
-    chip.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--p3);border:1px solid #f5a80022;border-radius:7px;padding:5px 8px 5px 10px';
-    chip.innerHTML = `
-      <span style="font-size:11px;color:var(--gray2);font-family:Montserrat,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">📧 ${em}</span>
-      <button onclick="removeEmail(${p.id},${i})"
-        style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0"
-        title="Remover">✕</button>
-    `;
-    chips.appendChild(chip);
+    const d = document.createElement('div');
+    d.style.cssText = 'display:flex;align-items:center;gap:6px;background:var(--p3);border:1px solid #f5a80033;border-radius:6px;padding:4px 8px';
+    d.innerHTML = `<span style="flex:1;font-size:10px;color:var(--gray2);font-family:Montserrat,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📧 ${em}</span>
+      <button onclick="epRemove(${p.id},${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;flex-shrink:0">✕</button>`;
+    chips.appendChild(d);
   });
 }
 
-function toggleNotifConfig() {
-  const box = document.getElementById('notif-cfg-box');
-  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+function toggleEpConfig() {
+  const b = document.getElementById('ep-cfg');
+  if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
 }
 
-function saveEmailjsConfig(pid) {
-  const p = db.projects.find(x => x.id === pid); if (!p) return;
+function epSaveCfg() {
+  const p = db.projects.find(x => x.id === session.projId); if (!p) return;
   if (!p.emailjsConfig) p.emailjsConfig = {};
-  const svc = document.getElementById('ejs-service');
-  const tpl = document.getElementById('ejs-template');
-  const pub = document.getElementById('ejs-pubkey');
-  p.emailjsConfig.serviceId  = svc ? svc.value.trim() : '';
-  p.emailjsConfig.templateId = tpl ? tpl.value.trim() : '';
-  p.emailjsConfig.publicKey  = pub ? pub.value.trim() : '';
+  p.emailjsConfig.serviceId  = (document.getElementById('ep-svc')||{}).value||'';
+  p.emailjsConfig.templateId = (document.getElementById('ep-tpl')||{}).value||'';
+  p.emailjsConfig.publicKey  = (document.getElementById('ep-pub')||{}).value||'';
   saveDB();
 }
 
-function addEmailToProject(pid) {
-  const inp = document.getElementById('new-email-input'); if (!inp) return;
+function epAddEmail() {
+  const inp = document.getElementById('ep-newemail'); if (!inp) return;
   const em = inp.value.trim().toLowerCase();
   if (!em || !em.includes('@') || !em.includes('.')) { showToast('❌ E-mail inválido!'); return; }
-  const p = db.projects.find(x => x.id === pid); if (!p) return;
+  const p = db.projects.find(x => x.id === session.projId); if (!p) return;
   if (!p.emails) p.emails = [];
-  if (p.emails.includes(em)) { showToast('⚠️ E-mail já cadastrado!'); return; }
-  p.emails.push(em);
-  saveDB();
-  inp.value = '';
-  const cnt = document.getElementById('notif-email-count');
+  if (p.emails.includes(em)) { showToast('⚠️ Já cadastrado!'); return; }
+  p.emails.push(em); saveDB(); inp.value = '';
+  const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
-  _renderEmailChips(p);
-  showToast('✅ ' + em + ' adicionado!');
+  epChips(p); showToast('✅ ' + em + ' adicionado!');
 }
 
-function removeEmail(pid, idx) {
+function epRemove(pid, idx) {
   const p = db.projects.find(x => x.id === pid); if (!p || !p.emails) return;
-  const em = p.emails.splice(idx, 1)[0];
-  saveDB();
-  const cnt = document.getElementById('notif-email-count');
+  const em = p.emails.splice(idx, 1)[0]; saveDB();
+  const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
-  _renderEmailChips(p);
-  showToast('🗑️ ' + em + ' removido.');
+  epChips(p); showToast('🗑️ ' + em + ' removido.');
 }
 
-// Mensagem interna (salva com debounce)
-let _msgTimer = null;
-function saveInternalMsg(pid) {
-  clearTimeout(_msgTimer);
-  _msgTimer = setTimeout(() => {
-    const p = db.projects.find(x => x.id === pid); if (!p) return;
-    const ta = document.getElementById('proj-internal-msg');
-    if (!ta) return;
-    p.internalMsg = ta.value;
-    saveDB();
-    const savedEl = document.getElementById('proj-msg-saved');
-    if (savedEl) { savedEl.style.opacity = '1'; setTimeout(() => savedEl.style.opacity = '0', 2000); }
+let _epMsgT = null;
+function epSaveMsg() {
+  clearTimeout(_epMsgT);
+  _epMsgT = setTimeout(() => {
+    const p = db.projects.find(x => x.id === session.projId); if (!p) return;
+    const ta = document.getElementById('ep-msg'); if (!ta) return;
+    p.internalMsg = ta.value; saveDB();
+    const ok = document.getElementById('ep-msg-ok');
+    if (ok) { ok.style.opacity = '1'; setTimeout(() => ok.style.opacity = '0', 2000); }
   }, 800);
 }
 
-// Debounce notificação de e-mail — só dispara 3s após última edição
-let _notifyTimer = null;
-function notifyProjectUpdate(p) {
-  if (!p || !p.emails || p.emails.length === 0) return;
+let _epNotifyT = null;
+function epNotify(p) {
+  if (!p?.emails?.length) return;
   const cfg = p.emailjsConfig || {};
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-  clearTimeout(_notifyTimer);
-  _notifyTimer = setTimeout(() => _dispatchEmails(p), 3000);
+  clearTimeout(_epNotifyT);
+  _epNotifyT = setTimeout(() => _epSend(p), 3000);
 }
 
-async function _dispatchEmails(p) {
+async function _epSend(p) {
   const cfg = p.emailjsConfig || {};
-  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-  if (!p.emails || p.emails.length === 0) return;
+  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey || !p.emails?.length) return;
   try {
     if (typeof emailjs === 'undefined') return;
     emailjs.init(cfg.publicKey);
     const sender = db.users.find(u => u.user === session.user);
-    const senderName = sender?.nome || session.user || 'Sistema 5W2H';
+    const nome = sender?.nome || session.user || 'Sistema';
     for (const email of p.emails) {
       try {
         await emailjs.send(cfg.serviceId, cfg.templateId, {
-          to_email: email, to_name: email, from_name: senderName,
+          to_email: email, to_name: email, from_name: nome,
           project: p.name,
           assunto: 'Atualização: ' + p.name,
-          mensagem: 'O projeto "' + p.name + '" foi atualizado por ' + senderName + '. Acesse para ver as mudanças.',
+          mensagem: 'O projeto "' + p.name + '" foi atualizado por ' + nome + '. Acesse para ver as mudanças.',
           reply_to: email,
         });
-      } catch(e) { console.warn('[EMAIL]', email, e); }
+      } catch(e) { console.warn('[EP]', email, e); }
     }
-    showToast('📧 Notificação enviada para ' + p.emails.length + ' destinatário(s)');
-  } catch(e) { console.error('[EMAIL]', e); }
+    showToast('📧 Notificação enviada para ' + p.emails.length + ' pessoa(s)');
+  } catch(e) { console.error('[EP]', e); }
 }
 </script>
+
 </body>
 </html>
