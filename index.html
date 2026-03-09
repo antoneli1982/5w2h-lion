@@ -385,10 +385,30 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
         if(ov){ ov.style.display='none'; }
         if(loaded){
           if(typeof renderSidebar==='function') renderSidebar();
-          if(typeof showLogin==='function') showLogin();
           console.log('[FB] UI atualizada com dados da nuvem');
         }
         console.log('[FB] pronto, loaded='+loaded);
+        // Try auto-login after Firebase data is ready
+        try{
+          var sess=localStorage.getItem('lion_remember_session');
+          if(sess){
+            var creds=JSON.parse(sess);
+            var found=db.users.find(function(u){return u.user.toLowerCase()===creds.user.toLowerCase()&&u.pass===creds.pass;});
+            if(found&&found.status==='approved'){
+              session.user=found;
+              session.dashSc=found.role==='fin'?'fin':found.role==='cli'?'cli':'op';
+              document.getElementById('screen-login').classList.remove('active');
+              document.getElementById('screen-app').classList.add('active');
+              if(typeof renderSidebar==='function') renderSidebar();
+              console.log('[AutoLogin] sessão restaurada:',found.user);
+              return;
+            } else {
+              localStorage.removeItem('lion_remember_session');
+            }
+          }
+        }catch(e){ localStorage.removeItem('lion_remember_session'); }
+        // No session — show login
+        if(typeof showLogin==='function') showLogin();
       });
       
       // Safety: hide overlay after 5s even if Firebase fails
@@ -971,17 +991,7 @@ function openProject(id,view){
   const p=db.projects.find(x=>x.id===id);if(!p)return;
   setActive('mi-p'+id);renderSidebar();
   document.getElementById('tb-title').textContent=p.name;
-  // Populate email recipient select with individual options
-  (function(){
-    var sel=document.getElementById('ep-to'); if(!sel) return;
-    var emails=p.emails||[];
-    sel.innerHTML='<option value="__all__">📢 Todos os destinatários</option>';
-    emails.forEach(function(em){
-      var opt=document.createElement('option');
-      opt.value=em; opt.textContent='✉️ '+em;
-      sel.appendChild(opt);
-    });
-  })();
+
   document.getElementById('tb-badge').innerHTML=p.sc==='fin'
     ?'<span class="topbar-badge badge-fin">💰 Financeiro</span>'
     :'<span class="topbar-badge badge-op">🔵 Operacional</span>';
@@ -1083,6 +1093,7 @@ function renderProject(p){
           <select id="ep-to"
             style="width:100%;background:var(--p3);color:#fff;border:1px solid #f5a80033;border-radius:6px;padding:7px 9px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;cursor:pointer">
             <option value="__all__">📢 Todos os destinatários</option>
+            ${(p.emails||[]).map(em=>`<option value="${em}">✉️ ${em}</option>`).join('')}
           </select>
         </div>
 
