@@ -339,11 +339,16 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     window._fbLoad = function(cb){
       if(!_ref){ if(cb) cb(false); return; }
       _ref.get().then(function(snap){
-        if(!snap.exists){ if(cb) cb(false); return; }
-        var d = snap.data(); if(!d||!d.db){ if(cb) cb(false); return; }
+        console.log('[FB] snap.exists='+snap.exists+' exists()='+snap.exists());
+        var docExists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
+        if(!docExists){ console.warn('[FB] documento não existe no Firestore'); if(cb) cb(false); return; }
+        var d = snap.data();
+        console.log('[FB] snap.data() keys='+(d?Object.keys(d).join(','):'null'));
+        if(!d||!d.db){ console.warn('[FB] campo db ausente no documento'); if(cb) cb(false); return; }
         try{
           var remote = JSON.parse(d.db);
-          if(!remote||!remote.users){ if(cb) cb(false); return; }
+          console.log('[FB] remote.users='+(remote&&remote.users?remote.users.length:'null'));
+          if(!remote||!remote.users){ console.warn('[FB] remote.users vazio'); if(cb) cb(false); return; }
           var remoteTs = remote.lastSaved||0;
           var localTs  = db.lastSaved||0;
           var localUsers = (db.users||[]).length;
