@@ -265,218 +265,210 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .modal-icon{font-size:38px;margin-bottom:10px}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 
-/* ═══════════════════════════════════════════
-   RESPONSIVE — TABLET (768px–1024px)
-═══════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE LAYOUT — TABLET / CELULAR
+   Notebook/Desktop: sem alteração (>1024px)
+   Tablet: 768px–1024px  
+   Celular: <768px
+═══════════════════════════════════════════════════ */
+
+/* ── TABLET ─────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE COMPLETO — TABLET (≤1024px)
+══════════════════════════════════════════════════════════ */
 @media (max-width:1024px){
-  .sidebar{ width:200px; min-width:200px; }
-  .sidebar-logo img, .logo-lion, .logo-uni, .logo-trilium{ max-width:80px !important; }
-  table{ min-width:800px; }
+  .sidebar{ width:210px; min-width:210px; }
+  .auth-card{ max-width:480px; }
+  table{ min-width:750px; }
+  .dash-grid, .projects-grid{
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .stats-bar{ gap:8px; }
+  .stat-pill{ min-width:75px; padding:7px 10px; }
 }
 
-/* ═══════════════════════════════════════════
-   RESPONSIVE — CELULAR (≤767px)
-═══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE COMPLETO — CELULAR (≤767px)
+══════════════════════════════════════════════════════════ */
 @media (max-width:767px){
-  /* Layout: sidebar vira menu inferior */
-  #screen-app{ flex-direction:column !important; }
 
-  .sidebar{
-    width:100% !important;
-    min-width:unset !important;
-    height:auto !important;
-    position:fixed !important;
-    bottom:0; left:0; right:0; top:auto !important;
-    z-index:1000;
-    flex-direction:row !important;
-    overflow-x:auto;
-    overflow-y:hidden;
-    border-right:none !important;
-    border-top:1px solid #ffffff15;
-    padding:0 !important;
-    box-shadow:0 -4px 20px rgba(0,0,0,.5);
-  }
-
-  /* Esconde elementos do sidebar no mobile */
-  .sidebar-logo,
-  .sidebar > div:first-child,
-  #s-avatar, #s-name, #s-role,
-  .sidebar-section-title,
-  .sidebar-menu-label { display:none !important; }
-
-  /* Projetos viram botões horizontais */
-  .sidebar-projects { 
-    display:flex !important; 
-    flex-direction:row !important;
-    overflow-x:auto;
-    gap:4px;
-    padding:6px 8px;
-    width:100%;
-  }
-  .sidebar-project-item {
-    white-space:nowrap;
-    font-size:10px !important;
-    padding:6px 10px !important;
-    border-radius:20px !important;
-    flex-shrink:0;
-  }
-
-  /* Botões de ação no rodapé */
-  .sidebar-actions {
-    display:flex !important;
-    flex-direction:row !important;
-    gap:4px;
-    padding:4px;
-    flex-shrink:0;
-  }
-  .sidebar-actions button {
-    font-size:9px !important;
-    padding:5px 8px !important;
-  }
-
-  /* Conteúdo principal com espaço para menu inferior */
-  .screen-app-main, #main-content, .app-main {
-    padding-bottom:80px !important;
-    overflow-y:auto;
-  }
-
-  /* Topbar mobile */
-  .topbar {
-    padding:8px 12px !important;
-    flex-wrap:wrap;
-    gap:6px;
-  }
-  .topbar-title { font-size:14px !important; }
-
-  /* Dashboard cards */
-  .dash-grid, .stats-grid {
-    grid-template-columns:1fr 1fr !important;
-    gap:8px !important;
-  }
-
-  /* Tabela 5W2H — scroll horizontal */
-  .table-wrap{ 
-    overflow-x:auto !important;
-    -webkit-overflow-scrolling:touch;
-    border-radius:8px;
-  }
-  table{ min-width:700px !important; }
-  th, td{ padding:6px 8px !important; font-size:10px !important; }
-
-  /* Gantt */
-  .gantt-wrap{ overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
-
-  /* Modais full-screen no mobile */
-  .modal{
-    width:96% !important;
-    max-width:100% !important;
-    margin:8px !important;
-    max-height:92vh !important;
-  }
-
-  /* Painel de email */
-  #ep-wrap > div:last-child {
+  /* ── Layout principal ── */
+  #screen-app{
     flex-direction:column !important;
+    height:100vh;
+    overflow:hidden;
   }
-  #ep-wrap .ep-col { width:100% !important; }
-
-  /* Auth card */
-  .auth-card{
-    width:94% !important;
-    padding:20px 16px !important;
-    margin:10px auto !important;
+  #screen-app > *:not(.sidebar){
+    flex:1 !important;
+    overflow-y:auto !important;
+    padding-bottom:64px !important;
+    height:calc(100vh - 56px) !important;
   }
 
-  /* Botões de status */
-  .status-btns{ flex-wrap:wrap; gap:4px; }
-  .status-btns button{ font-size:9px !important; padding:4px 8px !important; }
-
-  /* Logos no auth */
-  .auth-logo img{ max-width:60px !important; }
-  .auth-logo .logo-lion,
-  .auth-logo .logo-uni,
-  .auth-logo .logo-trilium{ max-width:80px !important; }
-
-  /* View header */
-  .view-header{ flex-wrap:wrap; gap:8px; }
-  .view-tabs{ flex-wrap:wrap; }
-  .view-tab{ font-size:10px !important; padding:5px 10px !important; }
-}
-
-/* ═══════════════════════════════════════════
-   RESPONSIVE — CELULAR PEQUENO (≤400px)
-═══════════════════════════════════════════ */
-@media (max-width:400px){
-  .auth-card{ padding:16px 12px !important; }
-  th, td{ font-size:9px !important; padding:5px 6px !important; }
-  .topbar-title{ font-size:12px !important; }
-}
-
-
-/* Mobile sidebar user section */
-@media (max-width:767px){
-  .sidebar-user{ 
-    display:flex !important;
+  /* ── Sidebar → barra inferior ── */
+  .sidebar{
+    width:100% !important; min-width:unset !important;
+    height:56px !important; min-height:56px !important; max-height:56px !important;
+    position:fixed !important; bottom:0 !important; top:auto !important;
+    left:0; right:0; z-index:999;
     flex-direction:row !important;
-    align-items:center !important;
-    padding:8px 10px !important;
-    gap:8px !important;
-    border-right:1px solid #ffffff10;
-    flex-shrink:0;
-    min-width:fit-content;
+    overflow-x:auto !important; overflow-y:hidden !important;
+    border-right:none !important; border-top:1px solid #ffffff15 !important;
+    padding:0 6px !important; align-items:center !important;
+    gap:4px; -webkit-overflow-scrolling:touch;
   }
-  .sidebar-user .user-avatar{
-    width:28px !important; height:28px !important;
-    font-size:11px !important;
-    flex-shrink:0;
+  .sidebar-logo,
+  .sidebar-section-title,
+  .sidebar-menu-label,
+  #s-name, #s-role { display:none !important; }
+
+  .sidebar-user{
+    flex-direction:row !important; align-items:center !important;
+    padding:4px 6px !important; gap:6px !important;
+    border-right:1px solid #ffffff15 !important;
+    flex-shrink:0 !important; min-width:fit-content !important;
+    border-bottom:none !important;
   }
-  #s-name{ display:none !important; }
-  #s-role{ display:none !important; }
-  
-  /* Sidebar inner layout for mobile */
-  .sidebar > *:not(.sidebar-user):not(.sidebar-bottom):not(.sidebar-projects-wrap){ 
-    display:none !important; 
+  .user-avatar{
+    width:30px !important; height:30px !important;
+    font-size:11px !important; flex-shrink:0 !important;
+  }
+  .sidebar-menu{
+    display:flex !important; flex-direction:row !important;
+    align-items:center !important; flex:1 !important;
+    overflow-x:auto !important; gap:4px !important;
+    padding:4px 0 !important; -webkit-overflow-scrolling:touch;
+  }
+  .menu-item{
+    white-space:nowrap !important; font-size:9px !important;
+    padding:4px 10px !important; border-radius:20px !important;
+    flex-shrink:0 !important; height:32px !important;
+    display:flex !important; align-items:center !important;
   }
   .sidebar-bottom{
-    display:flex !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    padding:4px !important;
-    gap:2px !important;
-    flex-shrink:0;
-    margin-left:auto;
+    display:flex !important; flex-direction:row !important;
+    gap:2px !important; padding:4px !important;
+    flex-shrink:0 !important; margin-left:auto !important;
   }
-  .sidebar-bottom button{
-    font-size:8px !important;
-    padding:4px 6px !important;
-    white-space:nowrap;
+  .sidebar-bottom button, .btn-logout, #btn-sair{
+    font-size:8px !important; padding:4px 6px !important; white-space:nowrap;
   }
 
-  /* Projects section horizontal scroll */
-  .sidebar-menu{
-    display:flex !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    overflow-x:auto !important;
-    flex:1 !important;
-    gap:4px !important;
-    padding:6px 8px !important;
-    -webkit-overflow-scrolling:touch;
+  /* ── Telas de auth ── */
+  .screen-login.active, .screen-register.active, .screen-edit-profile.active{
+    padding:12px 0 !important; align-items:flex-start !important; overflow-y:auto !important;
   }
-  .sidebar-menu .menu-item{
-    white-space:nowrap !important;
-    font-size:9px !important;
-    padding:5px 10px !important;
-    border-radius:20px !important;
-    flex-shrink:0 !important;
+  .auth-card{
+    width:95% !important; max-width:100% !important;
+    padding:18px 14px !important; margin:8px auto !important;
+  }
+  .auth-logo img, .auth-logo .logo-lion, .auth-logo .logo-uni{
+    max-height:45px !important; max-width:100px !important;
+  }
+  .auth-tabs{ gap:0 !important; }
+  .auth-tab{ font-size:11px !important; padding:8px 14px !important; }
+  .auth-input input, .auth-input select, input[type=text], input[type=password], select{
+    font-size:14px !important;
   }
 
-  /* Screen app needs padding for bottom bar */
-  #screen-app > *:not(.sidebar){
-    padding-bottom:70px !important;
+  /* ── Topbar ── */
+  .topbar{
+    padding:6px 10px !important; flex-wrap:wrap; gap:4px;
+    min-height:44px !important;
+  }
+  #tb-title, .topbar-title{ font-size:12px !important; }
+  .topbar-badge{ font-size:9px !important; padding:2px 6px !important; }
+  .view-tabs{ gap:3px !important; flex-wrap:nowrap; overflow-x:auto; }
+  .view-tab{ font-size:9px !important; padding:4px 8px !important; white-space:nowrap; }
+
+  /* ── Stats bar ── */
+  .stats-bar{ gap:6px !important; margin-bottom:10px !important; }
+  .stat-pill{ min-width:65px !important; padding:6px 8px !important; }
+  .stat-pill .v{ font-size:16px !important; }
+  .stat-pill .l{ font-size:9px !important; }
+  .gbar-wrap{ flex:1; min-width:100px; }
+
+  /* ── View header ── */
+  .view-header{ flex-wrap:wrap; gap:6px; padding:10px 12px !important; }
+  .btn-back{ font-size:10px !important; padding:5px 10px !important; }
+  .view-title{ font-size:14px !important; }
+
+  /* ── Dashboard ── */
+  .dash-grid, .projects-grid{
+    grid-template-columns: 1fr 1fr !important;
+    gap:8px !important;
+  }
+  .project-card{ padding:10px !important; }
+  .project-card .pc-name{ font-size:11px !important; }
+
+  /* ── Tabela 5W2H ── */
+  .table-wrap{
+    overflow-x:auto !important; -webkit-overflow-scrolling:touch;
+    border-radius:8px;
+  }
+  table{ min-width:620px !important; }
+  th{ font-size:9px !important; padding:6px 5px !important; }
+  td{ font-size:10px !important; padding:5px 5px !important; }
+  .btn-new-row{ font-size:10px !important; padding:6px 12px !important; }
+  .status-btns{ flex-wrap:wrap; gap:3px !important; }
+  .status-btns button{ font-size:8px !important; padding:3px 6px !important; }
+
+  /* ── Gantt / Cronograma ── */
+  .gantt-wrap, .cron-wrap{
+    overflow-x:auto !important; -webkit-overflow-scrolling:touch;
+  }
+  .gantt-row td, .cron-row td{ font-size:9px !important; padding:4px 5px !important; }
+
+  /* ── Painel de notificações / email ── */
+  #ep-body-cols{
+    grid-template-columns:1fr !important;
+  }
+  #ep-body-cols > div:first-child{
+    border-right:none !important; border-bottom:1px solid #ffffff10 !important;
+    padding-bottom:12px !important;
+  }
+  #ep-cfg > div[style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr !important;
+  }
+  #ep-wrap{ margin-bottom:10px !important; }
+
+  /* ── Modais ── */
+  .modal-overlay{ padding:8px !important; align-items:flex-end !important; }
+  .modal{
+    width:100% !important; max-width:100% !important;
+    margin:0 !important; max-height:88vh !important;
+    border-radius:14px 14px 0 0 !important;
     overflow-y:auto !important;
-    flex:1 !important;
   }
+  .modal-title{ font-size:14px !important; }
+
+  /* ── Botões gerais ── */
+  .btn-primary, .btn-secondary{
+    font-size:11px !important; padding:8px 14px !important;
+  }
+
+  /* ── Painel Sênior ── */
+  #modal-senior-panel .modal{ max-height:90vh !important; }
+  .senior-user-card{ padding:8px !important; }
+  .senior-user-card .sua-name{ font-size:11px !important; }
+
+  /* ── Firebase / Nuvem config ── */
+  #modal-firebase .modal{ max-width:100% !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — CELULAR PEQUENO (≤400px)
+══════════════════════════════════════════════════════════ */
+@media (max-width:400px){
+  .auth-card{ padding:14px 10px !important; }
+  th{ font-size:8px !important; padding:5px 4px !important; }
+  td{ font-size:9px !important; padding:4px 4px !important; }
+  .topbar{ padding:5px 8px !important; }
+  #tb-title{ font-size:11px !important; }
+  .stat-pill .v{ font-size:14px !important; }
+  .menu-item{ font-size:8px !important; padding:3px 8px !important; }
 }
 
 </style>
@@ -1305,7 +1297,7 @@ function renderProject(p){
     </div>
 
     <!-- Corpo: 2 colunas -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+    <div id="ep-body-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:0">
 
       <!-- Col 1: cadastrar destinatários -->
       <div style="padding:14px 16px;border-right:1px solid #f5a80033">
