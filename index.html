@@ -502,6 +502,46 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       }).catch(function(e){ console.warn('[FB] load error',e.code,e.message); if(cb) cb(false); });
     };
 
+    // Polling ativo a cada 5s — garante sync mesmo se onSnapshot cair
+    var _pollInterval = null;
+    window._startPolling = function(){
+      if(_pollInterval) return;
+      _pollInterval = setInterval(function(){
+        if(!_ref || typeof session==='undefined' || !session.user) return;
+        _ref.get().then(function(snap){
+          var docExists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
+          if(!docExists) return;
+          var d = snap.data(); if(!d||!d.db) return;
+          try{
+            var remote = JSON.parse(d.db);
+            if(!remote||!remote.users) return;
+            var remoteId = remote.saveId||'';
+            if(remoteId && remoteId === _lastSavedId) return; // foi esta aba
+            if(remote.lastSaved && remote.lastSaved <= (db.lastSaved||0)) return; // não é novo
+            console.log('[FB] poll — detectou mudança, atualizando');
+            db.users      = remote.users      || db.users;
+            db.projects   = remote.projects   || db.projects;
+            db.nextProjId = remote.nextProjId || db.nextProjId;
+            db.lastSaved  = remote.lastSaved  || db.lastSaved;
+            db.saveId     = remoteId;
+            _lastSavedId  = remoteId; // marca como visto para não re-processar
+            if(d.photos){
+              var ph=JSON.parse(d.photos);
+              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
+            }
+            var cl=JSON.parse(JSON.stringify(db));
+            cl.users.forEach(function(u){delete u.photo;});
+            localStorage.setItem(DB_K, JSON.stringify(cl));
+            _syncUI();
+          }catch(ex){ console.error('[FB] poll error',ex); }
+        }).catch(function(e){ console.warn('[FB] poll error',e.code); });
+      }, 5000);
+      console.log('[FB] polling iniciado (5s)');
+    };
+    window._stopPolling = function(){
+      if(_pollInterval){ clearInterval(_pollInterval); _pollInterval=null; }
+    };
+
     _init();
 
 
@@ -1054,7 +1094,7 @@ function finishLogin(found){
   if(found.role==='senior')updatePendingBadge();
   // Garante dados do Firebase antes de renderizar (novo browser)
   if(window._fbLoad){
-    window._fbLoad(function(){ showDashboard(); });
+    window._fbLoad(function(){ showDashboard(); if(window._startPolling) window._startPolling(); });
   } else {
     showDashboard();
   }
@@ -1062,6 +1102,7 @@ function finishLogin(found){
 }
 
 function doLogout(){
+  if(window._stopPolling) window._stopPolling();
   session.user=null; try{localStorage.removeItem('lion_remember_session');}catch(e){}
   showScreen('screen-login');
   // Only clear fields if not remembered
