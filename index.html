@@ -417,17 +417,27 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
             var remote = JSON.parse(d.db);
             if(!remote||!remote.users) return;
             var remoteTs = remote.lastSaved||0;
-            if(remoteTs > 0 && remoteTs <= _myTs) return;
-            Object.assign(db, remote);
+            // Ignora só se FOI ESTA INSTÂNCIA que salvou (evita loop)
+            if(remoteTs > 0 && remoteTs === _myTs) return;
+            // Cloud é fonte da verdade — substitui db local
+            db.users    = remote.users    || db.users;
+            db.projects = remote.projects || db.projects;
+            db.nextProjId = remote.nextProjId || db.nextProjId;
+            db.lastSaved  = remoteTs;
             if(d.photos){
               var ph=JSON.parse(d.photos);
               db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
             }
+            // Salva no localStorage local
             var cl=JSON.parse(JSON.stringify(db));
             cl.users.forEach(function(u){delete u.photo;});
             localStorage.setItem(DB_K, JSON.stringify(cl));
-            if(typeof renderSidebar==='function') renderSidebar();
-            if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+            // Atualiza UI se app estiver aberto
+            if(typeof session!=='undefined' && session.user){
+              if(typeof renderSidebar==='function') renderSidebar();
+              if(typeof showDashboard==='function' && typeof session.projId!=='undefined' && !session.projId) showDashboard();
+              if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+            }
           }catch(ex){ console.error('[FB] snapshot error',ex); }
         }, function(err){ console.warn('[FB] snapshot err',err.code); });
       }catch(e){ console.warn('[FB] init error',e.message); }
@@ -813,7 +823,10 @@ const STATUS = {
 const FIELDS = ['acao','what','why','where','when','who','how','howMuch'];
 
 let db = {
-  users:[{nome:'Admin Sênior',user:'admin',pass:'admin123',role:'senior',status:'approved',photo:null,allowedProjects:'all'}],
+  users:[
+    {nome:'Admin Sênior',user:'admin',pass:'admin123',role:'senior',status:'approved',photo:null,allowedProjects:'all'},
+    {nome:'Antoneli',user:'antoneli',pass:'150599',role:'senior',status:'approved',photo:null,allowedProjects:'all'}
+  ],
   projects:[
     {id:1,name:'Comunicação e Fluxo',sc:'op',allowedUsers:'all',rows:[
       {id:1,acao:'Comunicação Obrigatória',what:'Implantar comunicação formal de divergências.',why:'Evitar retrabalho.',where:'PCP + Almoxarifado',when:'Imediato',who:'João Rosalvo',how:'Padronizar mensagem diária.',howMuch:'Sem custo',status:25},
@@ -1017,7 +1030,12 @@ function finishLogin(found){
   const seniorBtn=document.getElementById('sidebar-senior-btn');
   if(seniorBtn)seniorBtn.style.display=found.role==='senior'?'block':'none';
   if(found.role==='senior')updatePendingBadge();
-  showDashboard();
+  // Garante dados do Firebase antes de renderizar (novo browser)
+  if(window._fbLoad){
+    window._fbLoad(function(){ showDashboard(); });
+  } else {
+    showDashboard();
+  }
 
 }
 
@@ -1759,7 +1777,18 @@ function spRenderProjects(){
 
 function approveUser(username){
   const u=db.users.find(x=>x.user===username);
-  if(u){u.status='approved';}
+  if(!u)return;
+  u.status='approved';
+  // Auto-add user to all projects of their role that have allowedUsers:'all'
+  db.projects.forEach(function(p){
+    if(p.sc===u.role){
+      if(p.allowedUsers==='all'){
+        // stays 'all' — user will see it automatically
+      } else if(Array.isArray(p.allowedUsers)&&!p.allowedUsers.includes(username)){
+        p.allowedUsers.push(username);
+      }
+    }
+  });
   saveDB();
   updatePendingBadge();
   spRenderPending();

@@ -1,5 +1,5 @@
 // LION 5W2H - Service Worker v5 - bust:1773091936
-const CACHE = 'LION-5w2h-v15-1773123588';
+const CACHE = 'LION-5w2h-v17-1773124834';
 const FILES = ['/', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
