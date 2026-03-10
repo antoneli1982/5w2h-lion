@@ -1,24 +1,6 @@
-// LION 5W2H - Service Worker v5 - bust:1773091936
-const CACHE = 'LION-5w2h-v17-1773124834';
-const FILES = ['/', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
-
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
-  self.clients.claim();
-});
-
-// Network first: always fetch fresh, fallback to cache
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request).then(r => {
-      const clone = r.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return r;
-    }).catch(() => caches.match(e.request))
-  );
-});
+const CACHE_NAME = 'v18';
+const CACHE_TS = '1773211200';
+const ASSETS = ['./','./index.html','./manifest.json'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim();});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const rc=r.clone();caches.open(CACHE_NAME).then(c=>c.put(e.request,rc));return r;}).catch(()=>caches.match(e.request)));});

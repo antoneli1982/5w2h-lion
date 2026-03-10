@@ -435,7 +435,16 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
             // Atualiza UI se app estiver aberto
             if(typeof session!=='undefined' && session.user){
               if(typeof renderSidebar==='function') renderSidebar();
-              if(typeof showDashboard==='function' && typeof session.projId!=='undefined' && !session.projId) showDashboard();
+              if(session.projId){
+                // Está dentro de um projeto — re-renderiza a view atual
+                var _p = db.projects.find(function(x){return x.id===session.projId;});
+                if(_p){
+                  if(session.view==='gantt' && typeof renderGantt==='function') renderGantt(_p);
+                  else if(typeof renderProject==='function') renderProject(_p);
+                }
+              } else {
+                if(typeof showDashboard==='function') showDashboard();
+              }
               if(typeof showToast==='function') showToast('☁️ Sincronizado!');
             }
           }catch(ex){ console.error('[FB] snapshot error',ex); }
