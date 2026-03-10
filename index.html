@@ -958,33 +958,36 @@ function doRegister(){
   setTimeout(()=>{ ok.style.display='none'; switchAuthTab('login'); }, 2400);
 }
 function doLogin(){
-  const user=v('l-user'),pass=v('l-pass');
+  const userLC=v('l-user').toLowerCase().trim();
+  const passT=v('l-pass').trim();
+  const err=document.getElementById('l-error');
+  err.style.display='none';
+  if(!userLC||!passT){showErr(err,'Preencha usuário e senha.');return;}
+
+  function tryAuth(){return db.users.find(u=>u.user.toLowerCase()===userLC&&u.pass===passT)||null;}
+
+  var found=tryAuth();
+  if(found){finishLogin(found);return;}
+
+  // Firebase ainda não carregou — aguarda e tenta de novo
+  showErr(err,'⏳ Verificando...');
+  window._fbLoad(function(loaded){
+    found=tryAuth();
+    if(found){err.style.display='none';finishLogin(found);return;}
+    // Aguarda onSnapshot chegar (máx 4s)
+    var tries=0;
+    var timer=setInterval(function(){
+      tries++;
+      found=tryAuth();
+      if(found){clearInterval(timer);err.style.display='none';finishLogin(found);return;}
+      if(tries>=8){clearInterval(timer);showErr(err,'Usuário ou senha incorretos.');}
+    },500);
+  });
+}
+
+function finishLogin(found){
   const err=document.getElementById('l-error');
   const rememberCb=document.getElementById('l-remember');
-  err.style.display='none';
-  // Try local first, if not found sync from Firebase then retry
-  const userLC=user.toLowerCase().trim();const passT=pass.trim();const found=db.users.find(u=>u.user.toLowerCase()===userLC&&u.pass===passT);
-  if(!found){
-    // Maybe Firebase hasn't loaded yet — sync now and retry
-    if(window._fbLoad){
-      showErr(err,'⏳ Sincronizando... tente novamente em 3 segundos.');
-      window._fbLoad(function(loaded){
-        if(loaded){
-          const found2=db.users.find(u=>u.user.toLowerCase()===userLC&&u.pass===passT);
-          if(found2){
-            err.style.display='none';
-            doLogin(); // retry after sync
-          } else {
-            showErr(err,'Usuário ou senha incorretos.');
-          }
-        } else {
-          showErr(err,'Usuário ou senha incorretos.');
-        }
-      });
-      return;
-    }
-    showErr(err,'Usuário ou senha incorretos.');return;
-  }
   if(found.status==='pending'){showErr(err,'⏳ Sua conta aguarda aprovação de um Sênior. Tente novamente mais tarde.');return;}
   if(found.status==='rejected'){showErr(err,'❌ Acesso negado. Conta reprovada. Entre em contato com um Sênior.');return;}
   // Handle remember me
@@ -1015,7 +1018,9 @@ function doLogin(){
   if(seniorBtn)seniorBtn.style.display=found.role==='senior'?'block':'none';
   if(found.role==='senior')updatePendingBadge();
   showDashboard();
+
 }
+
 function doLogout(){
   session.user=null; try{localStorage.removeItem('lion_remember_session');}catch(e){}
   showScreen('screen-login');
