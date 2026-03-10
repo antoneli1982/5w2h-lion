@@ -402,154 +402,163 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     var APP_DOC = 'lion_5w2h';
     var DB_K    = 'lion_db';
     var PH_K    = 'lion_photos';
-    var _fs, _ref;
-    // ID único desta aba/browser — gerado uma vez por sessão
-    var _tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    var _lastSavedId = ''; // ID do último save que ESTA aba fez
+    var _ref = null;
+    var _tabId = 'tab_' + Math.random().toString(36).slice(2) + '_' + Date.now().toString(36);
+    var _lastSavedId = '';
+    var _pollTimer = null;
+
+    // Atualiza UI com dados remotos
+    function _applyRemote(remote, photos) {
+      db.users      = remote.users      || db.users;
+      db.projects   = remote.projects   || db.projects;
+      db.nextProjId = remote.nextProjId || db.nextProjId;
+      db.nextRowId  = remote.nextRowId  || db.nextRowId;
+      db.nextGanttId= remote.nextGanttId|| db.nextGanttId;
+      db.saveId     = remote.saveId     || '';
+      db.lastSaved  = remote.lastSaved  || 0;
+      if(photos){
+        db.users.forEach(function(u){if(photos[u.user])u.photo=photos[u.user];});
+      }
+      // Salva cache local
+      try{
+        var cl=JSON.parse(JSON.stringify(db));
+        cl.users.forEach(function(u){delete u.photo;});
+        localStorage.setItem(DB_K, JSON.stringify(cl));
+      }catch(e){}
+    }
 
     function _syncUI(){
       if(typeof session==='undefined' || !session.user) return;
-      if(typeof renderSidebar==='function') renderSidebar();
-      if(session.projId){
-        var _p = db.projects.find(function(x){return x.id===session.projId;});
-        if(_p){
-          if(session.view==='gantt' && typeof renderGantt==='function') renderGantt(_p);
-          else if(typeof renderProject==='function') renderProject(_p);
+      try{
+        if(typeof renderSidebar==='function') renderSidebar();
+        if(session.projId){
+          var _p = db.projects.find(function(x){return x.id===session.projId;});
+          if(_p){
+            if(session.view==='gantt' && typeof renderGantt==='function') renderGantt(_p);
+            else if(typeof renderProject==='function') renderProject(_p);
+          }
+        } else {
+          if(typeof showDashboard==='function') showDashboard();
         }
-      } else {
-        if(typeof showDashboard==='function') showDashboard();
-      }
-      if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+        if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+      }catch(ex){ console.warn('[FB] syncUI error', ex); }
+    }
+
+    function _isOwnSave(saveId){
+      return saveId && (saveId === _lastSavedId || saveId === (db.saveId||''));
     }
 
     function _init(){
       try{
         if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
-        _fs  = firebase.firestore();
-        try{ _fs.settings({ experimentalForceLongPolling: true, merge: true }); }catch(e){}
-        console.log('[FB] longPolling ativado');
-        _ref = _fs.collection('apps').doc(APP_DOC);
-        console.log('[FB] conectado ✅ —', APP_DOC);
+        var fs = firebase.firestore();
+        try{ fs.settings({ experimentalForceLongPolling: true, merge: true }); }catch(e){}
+        _ref = fs.collection('apps').doc(APP_DOC);
+        console.log('[FB] init ✅', APP_DOC, '| tabId:', _tabId);
+
+        // onSnapshot — tempo real
         _ref.onSnapshot(function(snap){
-          if(!snap || !(typeof snap.exists==='function'?snap.exists():snap.exists)) return;
-          var d = snap.data(); if(!d||!d.db) return;
+          if(!snap) return;
+          var exists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
+          if(!exists) return;
+          var d = snap.data();
+          if(!d || !d.db) return;
           try{
             var remote = JSON.parse(d.db);
-            if(!remote||!remote.users) return;
-            // Ignora APENAS se foi ESTA aba que acabou de salvar
-            var remoteId = remote.saveId||'';
-            if(remoteId && remoteId === _lastSavedId){
-              console.log('[FB] snapshot ignorado (próprio save)');
+            if(!remote || !remote.users) return;
+            if(_isOwnSave(remote.saveId||'')){
+              console.log('[FB] snapshot: próprio save, ignorando');
               return;
             }
-            console.log('[FB] snapshot de outro browser/aba — atualizando UI');
-            // Cloud é fonte da verdade
-            db.users      = remote.users      || db.users;
-            db.projects   = remote.projects   || db.projects;
-            db.nextProjId = remote.nextProjId || db.nextProjId;
-            db.lastSaved  = remote.lastSaved  || db.lastSaved;
-            if(d.photos){
-              var ph=JSON.parse(d.photos);
-              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
-            }
-            var cl=JSON.parse(JSON.stringify(db));
-            cl.users.forEach(function(u){delete u.photo;});
-            localStorage.setItem(DB_K, JSON.stringify(cl));
+            console.log('[FB] snapshot: update remoto recebido ✅', remote.saveId);
+            var photos = d.photos ? JSON.parse(d.photos) : null;
+            _applyRemote(remote, photos);
             _syncUI();
-          }catch(ex){ console.error('[FB] snapshot error',ex); }
-        }, function(err){ console.warn('[FB] snapshot err',err.code,err.message); });
-      }catch(e){ console.warn('[FB] init error',e.message); }
+          }catch(ex){ console.error('[FB] snapshot parse error', ex); }
+        }, function(err){
+          console.warn('[FB] onSnapshot falhou:', err.code, err.message);
+          // Se onSnapshot falhar, inicia polling imediatamente
+          _startPolling();
+        });
+
+      }catch(e){ console.error('[FB] init error:', e.message); }
     }
 
+    // SAVE
     window._fbSave = function(){
-      if(!_ref) return;
+      if(!_ref){ console.warn('[FB] save: _ref não inicializado'); return; }
       try{
         var cl = JSON.parse(JSON.stringify(db));
         cl.users.forEach(function(u){delete u.photo;});
-        // saveId único: tabId + timestamp — impossível colidir entre browsers
         var sid = _tabId + '_' + Date.now().toString(36);
         _lastSavedId = sid;
         cl.saveId    = sid;
         cl.lastSaved = Date.now();
         db.saveId    = sid;
         db.lastSaved = cl.lastSaved;
-        var photos = localStorage.getItem(PH_K)||'{}';
-        _ref.set({ db: JSON.stringify(cl), photos: photos, updated: new Date().toISOString() })
-          .then(function(){ console.log('[FB] salvo ✅ id='+sid); })
-          .catch(function(e){ console.warn('[FB] save error',e.code,e.message); });
-      }catch(e){ console.warn('[FB] save exception',e); }
+        var photos = {};
+        db.users.forEach(function(u){ if(u.photo) photos[u.user] = u.photo; });
+        try{ localStorage.setItem(PH_K, JSON.stringify(photos)); }catch(e){}
+        _ref.set({ db: JSON.stringify(cl), photos: JSON.stringify(photos), updated: new Date().toISOString() })
+          .then(function(){ console.log('[FB] saved ✅', sid); })
+          .catch(function(e){ console.error('[FB] save error:', e.code, e.message); });
+      }catch(e){ console.error('[FB] save exception:', e); }
     };
 
+    // LOAD (força leitura direta do Firestore)
     window._fbLoad = function(cb){
       if(!_ref){ if(cb) cb(false); return; }
       _ref.get().then(function(snap){
-        var docExists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
-        if(!docExists){ if(cb) cb(false); return; }
+        var exists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
+        if(!exists){ if(cb) cb(false); return; }
         var d = snap.data();
-        if(!d||!d.db){ if(cb) cb(false); return; }
+        if(!d || !d.db){ if(cb) cb(false); return; }
         try{
           var remote = JSON.parse(d.db);
-          if(!remote||!remote.users){ if(cb) cb(false); return; }
-          Object.assign(db, remote);
-          if(d.photos){
-            var ph=JSON.parse(d.photos);
-            db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
-            localStorage.setItem(PH_K, d.photos);
-          }
-          var cl=JSON.parse(JSON.stringify(db));
-          cl.users.forEach(function(u){delete u.photo;});
-          localStorage.setItem(DB_K, JSON.stringify(cl));
+          if(!remote || !remote.users){ if(cb) cb(false); return; }
+          var photos = d.photos ? JSON.parse(d.photos) : null;
+          _applyRemote(remote, photos);
+          console.log('[FB] load ✅ saveId:', remote.saveId);
           if(cb) cb(true);
-        }catch(ex){ console.error('[FB] load error',ex); if(cb) cb(false); }
-      }).catch(function(e){ console.warn('[FB] load error',e.code,e.message); if(cb) cb(false); });
+        }catch(ex){ console.error('[FB] load parse error', ex); if(cb) cb(false); }
+      }).catch(function(e){ console.error('[FB] load error:', e.code, e.message); if(cb) cb(false); });
     };
 
-    // Polling ativo a cada 5s — garante sync mesmo se onSnapshot cair
-    var _pollInterval = null;
+    // POLLING — backup para quando onSnapshot não funcionar
+    function _poll(){
+      if(!_ref || typeof session==='undefined' || !session.user) return;
+      _ref.get().then(function(snap){
+        var exists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
+        if(!exists) return;
+        var d = snap.data();
+        if(!d || !d.db) return;
+        try{
+          var remote = JSON.parse(d.db);
+          if(!remote || !remote.users) return;
+          var remoteId = remote.saveId || '';
+          // Só processa se o saveId for diferente do que já temos
+          if(remoteId && remoteId === _lastSavedId) return;
+          if(remoteId && remoteId === (db.saveId||'')) return;
+          console.log('[FB] poll: update detectado ✅', remoteId);
+          var photos = d.photos ? JSON.parse(d.photos) : null;
+          _lastSavedId = remoteId; // evita reprocessar
+          _applyRemote(remote, photos);
+          _syncUI();
+        }catch(ex){ console.error('[FB] poll error', ex); }
+      }).catch(function(e){ console.warn('[FB] poll get error', e.code); });
+    }
+
     window._startPolling = function(){
-      if(_pollInterval) return;
-      _pollInterval = setInterval(function(){
-        if(!_ref || typeof session==='undefined' || !session.user) return;
-        _ref.get().then(function(snap){
-          var docExists = (typeof snap.exists==='function') ? snap.exists() : snap.exists;
-          if(!docExists) return;
-          var d = snap.data(); if(!d||!d.db) return;
-          try{
-            var remote = JSON.parse(d.db);
-            if(!remote||!remote.users) return;
-            var remoteId = remote.saveId||'';
-            // Ignora APENAS se foi ESTA aba que fez o último save
-            if(remoteId && remoteId === _lastSavedId) return;
-            // Atualiza sempre que o saveId for diferente do que temos
-            if(remoteId && remoteId === (db.saveId||'')) return; // já temos este estado
-            console.log('[FB] poll — detectou mudança remota, atualizando');
-            db.users      = remote.users      || db.users;
-            db.projects   = remote.projects   || db.projects;
-            db.nextProjId = remote.nextProjId || db.nextProjId;
-            db.lastSaved  = remote.lastSaved  || db.lastSaved;
-            db.saveId     = remoteId;
-            _lastSavedId  = remoteId; // marca como visto para não re-processar
-            if(d.photos){
-              var ph=JSON.parse(d.photos);
-              db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
-            }
-            var cl=JSON.parse(JSON.stringify(db));
-            cl.users.forEach(function(u){delete u.photo;});
-            localStorage.setItem(DB_K, JSON.stringify(cl));
-            _syncUI();
-          }catch(ex){ console.error('[FB] poll error',ex); }
-        }).catch(function(e){ console.warn('[FB] poll error',e.code); });
-      }, 5000);
-      console.log('[FB] polling iniciado (5s)');
+      if(_pollTimer) return;
+      console.log('[FB] polling iniciado (3s)');
+      _pollTimer = setInterval(_poll, 3000);
     };
     window._stopPolling = function(){
-      if(_pollInterval){ clearInterval(_pollInterval); _pollInterval=null; }
+      if(_pollTimer){ clearInterval(_pollTimer); _pollTimer=null; }
+      console.log('[FB] polling parado');
     };
 
     _init();
-
-
-
   })();
   </script>
 </head>
