@@ -402,7 +402,25 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     var APP_DOC = 'lion_5w2h';
     var DB_K    = 'lion_db';
     var PH_K    = 'lion_photos';
-    var _fs, _ref, _myTs = 0;
+    var _fs, _ref;
+    // ID único desta aba/browser — gerado uma vez por sessão
+    var _tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    var _lastSavedId = ''; // ID do último save que ESTA aba fez
+
+    function _syncUI(){
+      if(typeof session==='undefined' || !session.user) return;
+      if(typeof renderSidebar==='function') renderSidebar();
+      if(session.projId){
+        var _p = db.projects.find(function(x){return x.id===session.projId;});
+        if(_p){
+          if(session.view==='gantt' && typeof renderGantt==='function') renderGantt(_p);
+          else if(typeof renderProject==='function') renderProject(_p);
+        }
+      } else {
+        if(typeof showDashboard==='function') showDashboard();
+      }
+      if(typeof showToast==='function') showToast('☁️ Sincronizado!');
+    }
 
     function _init(){
       try{
@@ -416,39 +434,28 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
           try{
             var remote = JSON.parse(d.db);
             if(!remote||!remote.users) return;
-            var remoteTs = remote.lastSaved||0;
-            // Ignora só se FOI ESTA INSTÂNCIA que salvou (evita loop)
-            if(remoteTs > 0 && remoteTs === _myTs) return;
-            // Cloud é fonte da verdade — substitui db local
-            db.users    = remote.users    || db.users;
-            db.projects = remote.projects || db.projects;
+            // Ignora APENAS se foi ESTA aba que acabou de salvar
+            var remoteId = remote.saveId||'';
+            if(remoteId && remoteId === _lastSavedId){
+              console.log('[FB] snapshot ignorado (próprio save)');
+              return;
+            }
+            console.log('[FB] snapshot de outro browser/aba — atualizando UI');
+            // Cloud é fonte da verdade
+            db.users      = remote.users      || db.users;
+            db.projects   = remote.projects   || db.projects;
             db.nextProjId = remote.nextProjId || db.nextProjId;
-            db.lastSaved  = remoteTs;
+            db.lastSaved  = remote.lastSaved  || db.lastSaved;
             if(d.photos){
               var ph=JSON.parse(d.photos);
               db.users.forEach(function(u){if(ph[u.user])u.photo=ph[u.user];});
             }
-            // Salva no localStorage local
             var cl=JSON.parse(JSON.stringify(db));
             cl.users.forEach(function(u){delete u.photo;});
             localStorage.setItem(DB_K, JSON.stringify(cl));
-            // Atualiza UI se app estiver aberto
-            if(typeof session!=='undefined' && session.user){
-              if(typeof renderSidebar==='function') renderSidebar();
-              if(session.projId){
-                // Está dentro de um projeto — re-renderiza a view atual
-                var _p = db.projects.find(function(x){return x.id===session.projId;});
-                if(_p){
-                  if(session.view==='gantt' && typeof renderGantt==='function') renderGantt(_p);
-                  else if(typeof renderProject==='function') renderProject(_p);
-                }
-              } else {
-                if(typeof showDashboard==='function') showDashboard();
-              }
-              if(typeof showToast==='function') showToast('☁️ Sincronizado!');
-            }
+            _syncUI();
           }catch(ex){ console.error('[FB] snapshot error',ex); }
-        }, function(err){ console.warn('[FB] snapshot err',err.code); });
+        }, function(err){ console.warn('[FB] snapshot err',err.code,err.message); });
       }catch(e){ console.warn('[FB] init error',e.message); }
     }
 
@@ -457,10 +464,16 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       try{
         var cl = JSON.parse(JSON.stringify(db));
         cl.users.forEach(function(u){delete u.photo;});
-        cl.lastSaved = Date.now(); _myTs = cl.lastSaved; db.lastSaved = _myTs;
+        // saveId único: tabId + timestamp — impossível colidir entre browsers
+        var sid = _tabId + '_' + Date.now().toString(36);
+        _lastSavedId = sid;
+        cl.saveId    = sid;
+        cl.lastSaved = Date.now();
+        db.saveId    = sid;
+        db.lastSaved = cl.lastSaved;
         var photos = localStorage.getItem(PH_K)||'{}';
         _ref.set({ db: JSON.stringify(cl), photos: photos, updated: new Date().toISOString() })
-          .then(function(){ console.log('[FB] salvo ✅'); })
+          .then(function(){ console.log('[FB] salvo ✅ id='+sid); })
           .catch(function(e){ console.warn('[FB] save error',e.code,e.message); });
       }catch(e){ console.warn('[FB] save exception',e); }
     };
