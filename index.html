@@ -426,6 +426,8 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       try{
         if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
         _fs  = firebase.firestore();
+        try{ _fs.settings({ experimentalForceLongPolling: true, merge: true }); }catch(e){}
+        console.log('[FB] longPolling ativado');
         _ref = _fs.collection('apps').doc(APP_DOC);
         console.log('[FB] conectado ✅ —', APP_DOC);
         _ref.onSnapshot(function(snap){
@@ -516,9 +518,11 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
             var remote = JSON.parse(d.db);
             if(!remote||!remote.users) return;
             var remoteId = remote.saveId||'';
-            if(remoteId && remoteId === _lastSavedId) return; // foi esta aba
-            if(remote.lastSaved && remote.lastSaved <= (db.lastSaved||0)) return; // não é novo
-            console.log('[FB] poll — detectou mudança, atualizando');
+            // Ignora APENAS se foi ESTA aba que fez o último save
+            if(remoteId && remoteId === _lastSavedId) return;
+            // Atualiza sempre que o saveId for diferente do que temos
+            if(remoteId && remoteId === (db.saveId||'')) return; // já temos este estado
+            console.log('[FB] poll — detectou mudança remota, atualizando');
             db.users      = remote.users      || db.users;
             db.projects   = remote.projects   || db.projects;
             db.nextProjId = remote.nextProjId || db.nextProjId;
