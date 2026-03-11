@@ -1,16 +1,20 @@
-// SW v20 — sem cache de HTML, sempre busca da rede
-const CACHE = 'v20';
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))));
-  self.clients.claim();
+const CACHE_NAME = "5w2h-lion-v1";
+
+const urlsToCache = [
+  "/5w2h-lion/",
+  "/5w2h-lion/index.html",
+  "/5w2h-lion/icone-192.png",
+  "/5w2h-lion/icone-512.png"
+];
+
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
 });
-self.addEventListener('fetch', e => {
-  // Nunca cacheia — sempre vai à rede
-  // Em offline usa cache como fallback
-  const req = e.request;
-  if(req.method !== 'GET') return;
-  e.respondWith(
-    fetch(req).catch(() => caches.match(req))
+
+self.addEventListener("fetch", event => {
+  event.respondWith(
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
