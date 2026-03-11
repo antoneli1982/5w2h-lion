@@ -2610,6 +2610,91 @@ Novo status: ${atividade.status || 0}%`;
   .then(() => console.log("Email enviado"))
   .catch(err => console.error("Erro email:", err));
 } 
-</script>
+  
+<function notificarEventoCronograma(tipoEvento, projeto, item, extras = {}) {
+  try {
+    if (!projeto || !item) return;
+
+    const emailDestino = projeto.contatoEmail;
+    if (!emailDestino) return;
+
+    const cfg = db.emailConfig || {};
+    if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+
+    if (typeof emailjs === 'undefined') {
+      console.warn('EmailJS não carregado.');
+      return;
+    }
+
+    let assunto = `[CRONOGRAMA] ${projeto.name}`;
+    let mensagem = '';
+
+    if (tipoEvento === 'novo_item') {
+      assunto = `[NOVO ITEM NO CRONOGRAMA] ${projeto.name}`;
+      mensagem = `Foi criado um novo item no cronograma.
+
+Projeto: ${projeto.name}
+Descrição: ${item.desc || item.descricao || '-'}
+Prazo inicial: ${item.start || item.inicio || '-'}
+Prazo final: ${item.end || item.fim || '-'}
+Responsável: ${item.owner || item.responsavel || '-'}
+Status: ${item.status || '-'}`;
+    }
+
+    if (tipoEvento === 'status_alterado') {
+      assunto = `[STATUS ALTERADO] ${projeto.name}`;
+      mensagem = `O status de um item do cronograma foi alterado.
+
+Projeto: ${projeto.name}
+Descrição: ${item.desc || item.descricao || '-'}
+Status anterior: ${extras.statusAnterior || '-'}
+Novo status: ${extras.statusNovo || '-'}`;
+    }
+
+    if (tipoEvento === 'prazo_alterado') {
+      assunto = `[PRAZO ALTERADO] ${projeto.name}`;
+      mensagem = `O prazo de um item do cronograma foi alterado.
+
+Projeto: ${projeto.name}
+Descrição: ${item.desc || item.descricao || '-'}
+Prazo anterior: ${extras.prazoAnterior || '-'}
+Novo prazo: ${extras.prazoNovo || '-'}`;
+    }
+
+    if (tipoEvento === 'item_excluido') {
+      assunto = `[ITEM EXCLUÍDO] ${projeto.name}`;
+      mensagem = `Um item foi excluído do cronograma.
+
+Projeto: ${projeto.name}
+Descrição: ${item.desc || item.descricao || '-'}
+Responsável: ${item.owner || item.responsavel || '-'}`;
+    }
+
+    if (tipoEvento === 'concluido') {
+      assunto = `[ITEM CONCLUÍDO] ${projeto.name}`;
+      mensagem = `Um item do cronograma foi concluído.
+
+Projeto: ${projeto.name}
+Descrição: ${item.desc || item.descricao || '-'}
+Responsável: ${item.owner || item.responsavel || '-'}
+Status: ${item.status || '-'}`;
+    }
+
+    emailjs.init(cfg.publicKey);
+
+    emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: emailDestino,
+      project: projeto.name,
+      from_name: session?.user?.name || session?.user?.user || 'LION',
+      assunto,
+      mensagem
+    })
+    .then(() => console.log('Email enviado com sucesso'))
+    .catch(err => console.error('Erro ao enviar email:', err));
+
+  } catch (err) {
+    console.error('Erro em notificarEventoCronograma:', err);
+  }
+}/script>
 </body>
 </html>
