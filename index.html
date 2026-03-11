@@ -1599,7 +1599,6 @@ function addRow(){
 
   renderProject(p);
 }
-}
 function confirmDelRow(){
   if(!session.delRowTarget)return;
   const {pid,rid}=session.delRowTarget;
@@ -2562,13 +2561,6 @@ function getEmailConfig(){
     };
   }
   return db.emailConfig;
-}
-  
-    };
-  }
-  return db.emailConfig;
-}
-  }
 }
  function notificarEventoAtividade(tipoEvento, projeto, atividade){
 
