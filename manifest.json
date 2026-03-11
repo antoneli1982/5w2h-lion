@@ -1,10 +1,10 @@
 {
-  "name": "5W2H Lion",
+  "name": "5W2H LEÃO",
   "short_name": "5W2H",
   "start_url": "/5w2h-leao/",
   "display": "standalone",
-  "background_color": "#0b0b0b",
-  "theme_color": "#f5a300",
+  "background_color": "#0d0d0d",
+  "theme_color": "#f5a800",
   "icons": [
     {
       "src": "icone-192.png",
