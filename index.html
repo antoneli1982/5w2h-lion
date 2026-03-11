@@ -1995,7 +1995,12 @@ function spRenderAll(){
       const bg=i%2===0?'transparent':'#ffffff08';
       const sc=statusColor[u.status]||'var(--gray)';
       const sl=statusLabel[u.status]||u.status;
-      const avatar=u.photo?`<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:u.nome.charAt(0).toUpperCase();
+      const nomeUsuario = u.nome || u.name || u.user || 'Usuário';
+const fotoUsuario = u.photo || '';
+
+const avatar = fotoUsuario
+  ? `<img src="${fotoUsuario}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+  : nomeUsuario.charAt(0).toUpperCase();
       return `<tr style="border-bottom:1px solid #f5a80010;background:${bg}"><td style="padding:8px 10px"><div style="width:34px;height:34px;border-radius:50%;background:#2a1f00;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${color};overflow:hidden">${avatar}</div></td><td style="padding:8px 10px;color:#fff;font-weight:600;white-space:nowrap">${u.nome}</td><td style="padding:8px 10px;color:var(--gray2);white-space:nowrap">@${u.user}</td><td style="padding:8px 10px;font-weight:700;color:${sc};white-space:nowrap">${sl}</td><td style="padding:8px 10px;text-align:center"><button onclick="deleteCollaborator('${u.user}')" style="background:#1a0000;color:var(--danger);border:1px solid #ef444433;border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer" onmouseover="this.style.background='#330000'" onmouseout="this.style.background='#1a0000'">🗑️</button></td></tr>`;
     }).join('');
     return `<div style="background:var(--p3);border:1px solid ${color}33;border-radius:12px;padding:16px 18px;margin-bottom:18px"><div style="font-size:13px;font-weight:800;color:${color};font-family:Montserrat,sans-serif;margin-bottom:14px">${icon} ${sectionLabel} <span style="font-size:11px;color:var(--gray);font-weight:400">(${users.length} colaborador${users.length>1?'es':''})</span></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1.5px solid ${color}44"><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">FOTO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">NOME</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">USUÁRIO</th><th style="text-align:left;padding:6px 10px;color:${color};font-weight:700">STATUS</th><th style="text-align:center;padding:6px 10px;color:${color};font-weight:700">AÇÕES</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
