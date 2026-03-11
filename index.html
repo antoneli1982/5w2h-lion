@@ -2540,6 +2540,54 @@ function getEmailConfig(){
 }
   }
 }
+ function notificarEventoAtividade(tipoEvento, projeto, atividade){
+
+  if(!projeto || !atividade) return;
+
+  const emailDestino = projeto.contatoEmail;
+  if(!emailDestino) return;
+
+  const cfg = db.emailConfig || {};
+  if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+
+  const assunto = `[LION] Atualização no projeto ${projeto.name}`;
+
+  let mensagem = '';
+
+  if(tipoEvento === 'nova'){
+    mensagem = `Nova atividade criada no projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}
+Responsável: ${atividade.who || '-'}
+Quando: ${atividade.when || '-'}
+Status: ${atividade.status || 0}%`;
+  }
+
+  if(tipoEvento === 'exclusao'){
+    mensagem = `Uma atividade foi removida do projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}`;
+  }
+
+  if(tipoEvento === 'status'){
+    mensagem = `Status atualizado no projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}
+Novo status: ${atividade.status || 0}%`;
+  }
+
+  emailjs.init(cfg.publicKey);
+
+  emailjs.send(cfg.serviceId, cfg.templateId, {
+    to_email: emailDestino,
+    project: projeto.name,
+    from_name: session.user?.user || "LION",
+    assunto: assunto,
+    mensagem: mensagem
+  })
+  .then(() => console.log("Email enviado"))
+  .catch(err => console.error("Erro email:", err));
+} 
 </script>
 </body>
 </html>
