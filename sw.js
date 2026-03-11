@@ -1,4 +1,5 @@
 const CACHE_NAME = "5w2h-lion-v1";
+const CACHE_NAME = "5w2h-lion-v1";
 
 const urlsToCache = [
   "/5w2h-lion/",
