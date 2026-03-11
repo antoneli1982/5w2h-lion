@@ -1,40 +1,54 @@
-const CACHE_NAME = "5w2h-lion-v1";
+function montarMensagemProjeto(p){
+  if(!p) return '';
+  const total = (p.rows || []).length;
+  const concluidas = (p.rows || []).filter(r => Number(r.status) === 100).length;
+  const progresso = total ? Math.round((concluidas / total) * 100) : 0;
 
-const urlsToCache = [
-  "/5w2h-lion/",
-  "/5w2h-lion/index.html",
-  "/5w2h-lion/manifest.json",
-  "/5w2h-lion/icone-192.png",
-  "/5w2h-lion/icone-512.png"
-];
+  return `Projeto: ${p.name}
+Status geral: ${progresso}%
+Ações concluídas: ${concluidas}/${total}
+Acesse o LION 5W2H para acompanhar os detalhes.`;
+}
 
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
-});
+function abrirContatoEmail(pid){
+  const p = db.projects.find(x => x.id === pid);
+  if(!p){ showToast('❌ Projeto não encontrado!'); return; }
+  if(!p.contatoEmail){
+    showToast('⚠️ Este projeto não possui e-mail cadastrado.');
+    return;
+  }
 
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
-  );
-});
+  const assunto = encodeURIComponent('Atualização do projeto - ' + p.name);
+  const corpo = encodeURIComponent(montarMensagemProjeto(p));
+  window.open(`mailto:${p.contatoEmail}?subject=${assunto}&body=${corpo}`, '_blank');
+}
 
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+function abrirContatoWhatsapp(pid){
+  const p = db.projects.find(x => x.id === pid);
+  if(!p){ showToast('❌ Projeto não encontrado!'); return; }
+  if(!p.contatoWhatsapp){
+    showToast('⚠️ Este projeto não possui WhatsApp cadastrado.');
+    return;
+  }
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      return (
-        cached ||
-        fetch(event.request).catch(() => caches.match("/5w2h-lion/index.html"))
-      );
-    })
-  );
-});
+  const numero = String(p.contatoWhatsapp).replace(/\D/g,'');
+  const texto = encodeURIComponent(montarMensagemProjeto(p));
+  window.open(`https://wa.me/${numero}?text=${texto}`, '_blank');
+}
+
+function copiarMensagemProjeto(pid){
+  const p = db.projects.find(x => x.id === pid);
+  if(!p){ showToast('❌ Projeto não encontrado!'); return; }
+
+  const texto = montarMensagemProjeto(p);
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto)
+      .then(() => showToast('✅ Mensagem copiada!'))
+      .catch(() => {
+        prompt('Copie a mensagem abaixo:', texto);
+      });
+  } else {
+    prompt('Copie a mensagem abaixo:', texto);
+  }
+}
