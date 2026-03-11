@@ -1247,15 +1247,35 @@ function renderSidebar(){
 // PROJECTS
 // ══════════════════════════════════════════
 function createProject(){
-  const name=v('np-name').trim(),sc=document.getElementById('np-sc').value;
-  if(!name)return;
-  const creator=session.user;
-  // Senior-created: all; others: only themselves for now (senior can grant access)
-  const allowedUsers=creator.role==='senior'?'all':[creator.user];
-  db.projects.push({id:db.nextProjId++,name,sc,rows:[],gantt:[],allowedUsers,createdBy:creator.user});
+  const name = v('np-name').trim();
+  const sc = document.getElementById('np-sc').value;
+  const contatoEmail = (document.getElementById('np-email') || {}).value?.trim() || '';
+  const contatoWhatsapp = (document.getElementById('np-whatsapp') || {}).value?.trim() || '';
+
+  if(!name) return;
+
+  const creator = session.user;
+  const allowedUsers = creator.role === 'senior' ? 'all' : [creator.user];
+
+  db.projects.push({
+    id: db.nextProjId++,
+    name,
+    sc,
+    rows: [],
+    gantt: [],
+    allowedUsers,
+    createdBy: creator.user,
+    contatoEmail,
+    contatoWhatsapp
+  });
+
   saveDB();
   closeModal('modal-new-proj');
-  document.getElementById('np-name').value='';
+
+  document.getElementById('np-name').value = '';
+  if(document.getElementById('np-email')) document.getElementById('np-email').value = '';
+  if(document.getElementById('np-whatsapp')) document.getElementById('np-whatsapp').value = '';
+
   showDashboard();
 }
 function askDelProj(id){
