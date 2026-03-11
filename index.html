@@ -1565,10 +1565,40 @@ function startCellEdit(td,p,rowId,field){
   ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();row[field]=ta.value;saveDB();epNotify(p);renderRows(p);}};
 }
 function addRow(){
-  const p=db.projects.find(x=>x.id===session.projId);if(!p)return;
-  p.rows.push({id:db.nextRowId++,acao:'Nova ação',what:'',why:'',where:'',when:'',who:'',how:'',howMuch:'',status:0,anexo:null,anexoNome:'',anexoTipo:''});
+  const p = db.projects.find(x=>x.id===session.projId);
+  if(!p) return;
+
+  const novaLinha = {
+    id: db.nextRowId++,
+    acao: 'Nova ação',
+    what: '',
+    why: '',
+    where: '',
+    when: '',
+    who: '',
+    how: '',
+    howMuch: '',
+    status: 0,
+    anexo: null,
+    anexoNome: '',
+    anexoTipo: ''
+  };
+
+  p.rows.push(novaLinha);
+
   saveDB();
+
+  // 🔔 notificação automática
+  try{
+    if(typeof notificarEventoAtividade === 'function'){
+      notificarEventoAtividade('nova', p, novaLinha);
+    }
+  }catch(e){
+    console.warn('Falha ao enviar notificação:', e);
+  }
+
   renderProject(p);
+}
 }
 function confirmDelRow(){
   if(!session.delRowTarget)return;
