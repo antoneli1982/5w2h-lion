@@ -1,0 +1,39 @@
+
+.cron-kpis{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(140px,1fr));
+  gap:14px;
+  margin:18px 0;
+}
+.cron-kpi-card{
+  background:linear-gradient(180deg,#151515,#101010);
+  border:1px solid rgba(245,168,0,.15);
+  border-radius:14px;
+  padding:14px;
+  min-height:95px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 10px 25px rgba(0,0,0,.35);
+}
+.kpi-label{
+  font-size:11px;
+  color:#9fb0bc;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-bottom:6px;
+}
+.kpi-value{
+  font-size:28px;
+  font-weight:800;
+  color:white;
+}
+.kpi-sub{
+  font-size:11px;
+  color:#6e8a99;
+}
+.kpi-green .kpi-value{color:#4ade80;}
+.kpi-blue .kpi-value{color:#38bdf8;}
+.kpi-red .kpi-value{color:#ef4444;}
+.kpi-yellow .kpi-value{color:#f59e0b;}
+.kpi-purple .kpi-value{color:#a78bfa;}
