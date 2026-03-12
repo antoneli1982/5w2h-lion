@@ -1,0 +1,50 @@
+
+/* ===== Visual Upgrade Layer (non-breaking) ===== */
+:root{
+  --card-bg:#161616;
+  --card-border:#f5a80033;
+  --shadow:0 10px 30px rgba(0,0,0,.6);
+}
+.auth-card,.cron-hero,.gantt-wrap,.stats-bar,.menu-item,.stat-pill{
+  border-radius:16px !important;
+  box-shadow:var(--shadow);
+}
+.stat-pill{
+  background:var(--card-bg) !important;
+  border:1px solid var(--card-border) !important;
+  padding:14px !important;
+}
+.cron-hero{
+  background:linear-gradient(180deg,#161616,#111) !important;
+  border:1px solid var(--card-border);
+  border-radius:16px;
+  padding:20px;
+}
+.gantt-row{
+  background:#141414 !important;
+  border:1px solid #f5a80022 !important;
+  border-radius:10px;
+  margin-bottom:6px;
+  transition:.2s;
+}
+.gantt-row:hover{
+  transform:translateY(-1px);
+  border-color:#f5a80055 !important;
+}
+button,.view-tab,.pc-tab-btn{
+  border-radius:10px !important;
+}
+.proj-item{
+  border:1px solid #ffffff08;
+  padding:10px;
+  border-radius:12px;
+  margin-bottom:6px;
+}
+table{
+  border-radius:10px;
+  overflow:hidden;
+}
+.cron-hero-title{
+  font-size:18px !important;
+  font-weight:800 !important;
+}
