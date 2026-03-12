@@ -1,11 +1,21 @@
-export function KPICards(data){
+export function KPICards(data) {
+  const cards = [
+    ["Atividades", data.total, "Total planejado"],
+    ["Concluídas", data.done, "Entregas finalizadas"],
+    ["Em andamento", data.inProgress, "Execução atual"],
+    ["Atrasadas", data.late, "Necessitam ação"],
+    ["Progresso", `${data.progress}%`, "Andamento geral"],
+  ];
+
   return `
-  <div class="cards">
-    <div class="card"><h3>Atividades</h3><div class="value">${data.total}</div><div class="sub">Total planejado</div></div>
-    <div class="card"><h3>Em andamento</h3><div class="value">${data.inprogress}</div><div class="sub">Execução atual</div></div>
-    <div class="card"><h3>Concluídas</h3><div class="value">${data.done}</div><div class="sub">Finalizadas</div></div>
-    <div class="card"><h3>Atrasadas</h3><div class="value">${data.late}</div><div class="sub">Exigem ação</div></div>
-    <div class="card"><h3>Progresso</h3><div class="value">${data.progress}%</div><div class="sub">Andamento geral</div></div>
-  </div>
-  `
+    <section class="kpi-grid">
+      ${cards.map(([title, value, sub]) => `
+        <article class="kpi-card">
+          <div class="kpi-title">${title}</div>
+          <div class="kpi-value">${value}</div>
+          <div class="kpi-sub">${sub}</div>
+        </article>
+      `).join("")}
+    </section>
+  `;
 }
