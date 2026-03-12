@@ -388,7 +388,154 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 }
 @media(max-width:420px){
   .projects-grid{grid-template-columns:1fr !important}
-}</style>
+}
+/* ===== CRONOGRAMA HERO / KPI CARDS ===== */
+.cron-hero{
+  background:linear-gradient(180deg,#121212 0%, #0d0d0d 100%);
+  border:1px solid #f5a80026;
+  border-radius:22px;
+  padding:24px 24px 18px;
+  margin-bottom:18px;
+  box-shadow:0 12px 34px rgba(0,0,0,.34);
+}
+.cron-hero-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.cron-hero-title{
+  font-family:'Montserrat',sans-serif;
+  font-size:18px;
+  font-weight:800;
+  color:var(--white);
+  margin-bottom:4px;
+}
+.cron-hero-sub{
+  color:var(--gray2);
+  font-size:12px;
+  max-width:760px;
+  line-height:1.4;
+}
+.cron-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.cron-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(125px,1fr));
+  gap:14px;
+  margin:10px 0 16px;
+}
+.cron-summary-card{
+  background:linear-gradient(180deg,#171717 0%, #101010 100%);
+  border:1px solid #f5a80020;
+  border-radius:16px;
+  padding:14px 14px 12px;
+  min-height:94px;
+  box-shadow:0 10px 24px rgba(0,0,0,.28);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.cron-summary-card .v{
+  font-family:'Montserrat',sans-serif;
+  font-size:30px;
+  font-weight:800;
+  line-height:1;
+  margin-bottom:8px;
+}
+.cron-summary-card .l{
+  color:var(--gray2);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font-weight:700;
+}
+.cron-email-panel{
+  background:#101010;
+  border:1px solid #f5a80018;
+  border-radius:16px;
+  padding:14px 16px;
+}
+.cron-email-list{
+  color:var(--white);
+  font-size:12px;
+  line-height:1.5;
+  word-break:break-word;
+}
+.gantt-wrap{
+  border-radius:18px !important;
+  overflow:hidden;
+}
+.gantt-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:14px 18px;
+  background:#141414;
+  border-bottom:1px solid #f5a80018;
+}
+.gantt-title{
+  font-family:'Montserrat',sans-serif;
+  font-size:15px;
+  font-weight:800;
+  color:var(--white);
+}
+.gantt-period{
+  font-size:11px;
+  font-weight:700;
+  color:var(--green);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+#cron-progress-area{
+  background:#111111;
+  border-bottom:1px solid #f5a80012;
+}
+.cron-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  border:1px solid transparent;
+}
+.cron-badge.ok{
+  background:rgba(74,222,128,.12);
+  color:#86efac;
+  border-color:rgba(74,222,128,.22);
+}
+.cron-badge.warning{
+  background:rgba(245,158,11,.12);
+  color:#fcd34d;
+  border-color:rgba(245,158,11,.22);
+}
+.cron-badge.danger{
+  background:rgba(239,68,68,.12);
+  color:#fca5a5;
+  border-color:rgba(239,68,68,.22);
+}
+@media (max-width:1300px){
+  .cron-summary-grid{grid-template-columns:repeat(3,minmax(140px,1fr))}
+}
+@media (max-width:760px){
+  .cron-hero{padding:18px 16px 14px}
+  .cron-summary-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}
+}
+@media (max-width:520px){
+  .cron-summary-grid{grid-template-columns:1fr}
+}
+
+</style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -565,7 +712,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     _init();
   })();
   </script>
-<link rel="stylesheet" href="visual-upgrade.css">
 </head>
 <body>
   <!-- Firebase loading overlay -->
