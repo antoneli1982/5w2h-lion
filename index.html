@@ -1094,7 +1094,7 @@ function finishLogin(found){
   if(found.status==='rejected'){showErr(err,'❌ Acesso negado. Conta reprovada. Entre em contato com um Sênior.');return;}
   // Handle remember me
   if(rememberCb&&rememberCb.checked){
-    localStorage.setItem('lion_remember',JSON.stringify({user,pass}));
+    localStorage.setItem('lion_remember',JSON.stringify({user:found.user,pass:found.pass}));
   } else {
     localStorage.removeItem('lion_remember');
   }
@@ -1125,10 +1125,10 @@ nm.textContent = found.nome || found.name || found.user || '';
 
 // PERFIL
 rl.textContent = found.role || '';
-  document.getElementById('s-name').textContent=found.nome;
-  const roleEl=document.getElementById('s-role');
-  roleEl.textContent=found.role==='senior'?'👑 Sênior':'🔵 Operacional';
-  roleEl.className='user-role role-'+found.role;
+  if(rl){
+    rl.textContent = found.role==='senior' ? '👑 Sênior' : found.role==='fin' ? '🔵 Financeiro' : '🔵 Operacional';
+    rl.className='user-role role-'+found.role;
+  }
   showScreen('screen-app');
   // Show senior panel button if senior
   const seniorBtn=document.getElementById('sidebar-senior-btn');
@@ -1783,7 +1783,7 @@ function editCronCell(td,pid,gid,field){
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
-  const save=()=>{row[field]=inp.value;saveDB();epNotify(p);renderCronRows(p);};
+  const save=()=>{const anterior=row[field]||''; row[field]=inp.value; saveDB(); epNotify(p); if(field==='start' || field==='end'){ notificarEventoCronograma('prazo_alterado', p, row, { prazoAnterior: anterior, prazoNovo: inp.value }); } renderCronRows(p);};
   inp.onblur=save;
   inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}};
 }
@@ -1791,7 +1791,7 @@ function editCronCell(td,pid,gid,field){
 function updateCronStatus(pid,gid,val){
   const p=db.projects.find(x=>x.id===pid);
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
-  if(row){row.status=Number(val);saveDB();epNotify(p);renderCronRows(p);}
+  if(row){ const statusAnterior = row.status; row.status=Number(val); saveDB(); epNotify(p); if(String(statusAnterior)!==String(row.status)){ notificarEventoCronograma('status_alterado', p, row, { statusAnterior: statusAnterior + '%', statusNovo: row.status + '%' }); if(Number(row.status)===100){ notificarEventoCronograma('concluido', p, row); } } renderCronRows(p);}
 }
 
 function openAddCronForm(pid){
@@ -1807,7 +1807,7 @@ function addCronTask(pid){
   const p=db.projects.find(x=>x.id===pid);if(!p)return;
   const task=document.getElementById('gf-task').value.trim();
   if(!task)return;
-  p.gantt.push({
+  const novoItem = {
     id:db.nextGanttId++,
     task,
     week:document.getElementById('gf-week').value.trim(),
@@ -1817,9 +1817,11 @@ function addCronTask(pid){
     obs:document.getElementById('gf-obs').value.trim(),
     status:0,
     color:GANTT_COLORS[p.gantt.length%GANTT_COLORS.length]
-  });
+  };
+  p.gantt.push(novoItem);
   closeAddCronForm(pid);
   saveDB();
+  notificarEventoCronograma('novo_item', p, novoItem);
   renderGantt(p);
 }
 
@@ -1827,8 +1829,10 @@ function confirmDelGantt(){
   if(!session.delGanttTarget)return;
   const {pid,gid}=session.delGanttTarget;
   const p=db.projects.find(x=>x.id===pid);
+  const itemExcluido = p && p.gantt ? p.gantt.find(g=>g.id===gid) : null;
   if(p)p.gantt=p.gantt.filter(g=>g.id!==gid);
   saveDB();
+  if(p && itemExcluido) notificarEventoCronograma('item_excluido', p, itemExcluido);
   closeModal('modal-del-gantt');
   renderGantt(p);
 }
@@ -2125,38 +2129,38 @@ function saveProfile(){
   if(photoImg.style.display!=='none'&&photoImg.src&&photoImg.src.startsWith('data:'))u.photo=photoImg.src;
   session.user=u;
   saveDB();
-  const nomeUsuario = u.nome || u.name || u.user || 'Usuário';
-
-const nameEl = document.getElementById('s-name');
-if(nameEl) nameEl.textContent = nomeUsuario;
-
-const roleEl2 = document.getElementById('s-role');
-if(roleEl2){
-  roleEl2.textContent =
-    u.role === 'senior' ? '👑 Sênior' :
-    u.role === 'fin' ? '🔵 Financeiro' :
-    '🔵 Operacional';
-}
-
-const av = document.getElementById('s-avatar');
-if(av){
-  av.className = 'user-avatar ' + (
-    u.role === 'senior' ? 'senior' :
-    u.role === 'fin' ? 'fin' : ''
-  );
-
-  if(u.photo){
-    av.innerHTML = `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    av.style.fontSize = '0';
-  }else{
-    av.innerHTML = '';
-    av.textContent = nomeUsuario.charAt(0).toUpperCase();
-    av.style.fontSize = '';
-  }
-}
+  atualizarSidebarUsuario(u);
   okEl.style.display='block';
   okEl.textContent='✅ Perfil atualizado com sucesso!';
   setTimeout(()=>{showScreen('screen-app');},1400);
+}
+
+
+function atualizarSidebarUsuario(u){
+  if(!u) return;
+  const nomeUsuario = u.nome || u.name || u.user || 'Usuário';
+  const av = document.getElementById('s-avatar');
+  const nm = document.getElementById('s-name');
+  const rl = document.getElementById('s-role');
+  if(nm) nm.textContent = nomeUsuario;
+  if(rl){
+    rl.textContent = u.role==='senior' ? '👑 Sênior' : u.role==='fin' ? '🔵 Financeiro' : '🔵 Operacional';
+    rl.className = 'user-role role-' + (u.role || 'op');
+  }
+  if(av){
+    av.className = 'user-avatar ' + (
+      u.role === 'senior' ? 'senior' :
+      u.role === 'fin' ? 'fin' : ''
+    );
+    if(u.photo){
+      av.innerHTML = `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      av.style.fontSize = '0';
+    }else{
+      av.innerHTML = '';
+      av.textContent = nomeUsuario ? nomeUsuario.charAt(0).toUpperCase() : 'U';
+      av.style.fontSize = '';
+    }
+  }
 }
 
 // ══════════════════════════════════════════
@@ -2193,6 +2197,7 @@ function showErr(el,msg){el.textContent=msg;el.style.display='block'}
           document.getElementById('screen-login').classList.remove('active');
           document.getElementById('screen-app').classList.add('active');
           renderSidebar();
+      atualizarSidebarUsuario(session.user);
           console.log('[AutoLogin] restaurado:',found.user);
         }
       }
@@ -2275,16 +2280,9 @@ function epRender(p) {
   const u = session.user && typeof session.user === 'object' ? session.user : db.users.find(x => x.user === session.user);
   if (!u || u.role !== 'senior') { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  if (!p.emailjsConfig) p.emailjsConfig = {serviceId:'',templateId:'',publicKey:''};
   if (!p.emails) p.emails = [];
   if (!p.internalMsg) p.internalMsg = '';
-  // fill config
-  const s = document.getElementById('ep-svc');
-  const t = document.getElementById('ep-tpl');
-  const k = document.getElementById('ep-pub');
-  if (s) s.value = p.emailjsConfig.serviceId || '';
-  if (t) t.value = p.emailjsConfig.templateId || '';
-  if (k) k.value = p.emailjsConfig.publicKey || '';
+  carregarConfiguracaoEmailGlobal();
   // count
   const cnt = document.getElementById('ep-count');
   if (cnt) cnt.textContent = p.emails.length + ' e-mail' + (p.emails.length !== 1 ? 's' : '');
@@ -2318,12 +2316,7 @@ function toggleEpConfig() {
 }
 
 function epSaveCfg() {
-  const p = db.projects.find(x => x.id === session.projId); if (!p) return;
-  if (!p.emailjsConfig) p.emailjsConfig = {};
-  p.emailjsConfig.serviceId  = (document.getElementById('ep-svc')||{}).value||'';
-  p.emailjsConfig.templateId = (document.getElementById('ep-tpl')||{}).value||'';
-  p.emailjsConfig.publicKey  = (document.getElementById('ep-pub')||{}).value||'';
-  saveDB();
+  salvarConfiguracaoEmailGlobal();
 }
 
 function epAddEmail() {
@@ -2352,14 +2345,14 @@ function epRemove(pid, idx) {
 let _epNotifyT = null;
 function epNotify(p) {
   if (!p?.emails?.length) return;
-  const cfg = p.emailjsConfig || {};
+  const cfg = getEffectiveEmailConfig(p);
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
   clearTimeout(_epNotifyT);
   _epNotifyT = setTimeout(() => _epSend(p), 3000);
 }
 
 async function _epSend(p) {
-  const cfg = p.emailjsConfig || {};
+  const cfg = getEffectiveEmailConfig(p);
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey || !p.emails?.length) return;
   try {
     if (typeof emailjs === 'undefined') return;
@@ -2389,7 +2382,7 @@ async function epSendManual() {
   const status = document.getElementById('ep-send-status');
   if (!subj) { showToast('⚠️ Preencha o assunto!'); return; }
   if (!msg)  { showToast('⚠️ Preencha a mensagem!'); return; }
-  const cfg = p.emailjsConfig || {};
+  const cfg = getEffectiveEmailConfig(p);
   if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) {
     showToast('⚠️ Configure o EmailJS primeiro! Clique em ⚙️ EmailJS'); return;
   }
@@ -2496,6 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
     document.getElementById('screen-app').classList.add('active');
     renderSidebar();
+    atualizarSidebarUsuario(u);
     showDashboard();
   }
   function tryAuto(){
@@ -2522,6 +2516,192 @@ document.addEventListener('DOMContentLoaded', () => {
       var live=db.users.find(function(u){return u.user===session.user.user;});
       if(live){session.user=live;try{localStorage.setItem(SESS,JSON.stringify(live));}catch(e){}}
       renderSidebar();
+      atualizarSidebarUsuario(session.user);
+    }
+  });
+  setTimeout(function(){if(ov)ov.style.display='none';},6000);
+})();
+  // ===== CONFIGURAÇÃO GLOBAL DE EMAIL =====
+function getEmailConfig(){
+  if(!db.emailConfig){
+    db.emailConfig = { serviceId:'', templateId:'', publicKey:'' };
+  }
+  return db.emailConfig;
+}
+
+function getEffectiveEmailConfig(p){
+  const globalCfg = getEmailConfig();
+  const localCfg = (p && p.emailjsConfig) ? p.emailjsConfig : {};
+  return {
+    serviceId: globalCfg.serviceId || localCfg.serviceId || '',
+    templateId: globalCfg.templateId || localCfg.templateId || '',
+    publicKey: globalCfg.publicKey || localCfg.publicKey || ''
+  };
+}
+
+function salvarConfiguracaoEmailGlobal(){
+  const serviceId = (document.getElementById('ep-svc') || {}).value?.trim() || '';
+  const templateId = (document.getElementById('ep-tpl') || {}).value?.trim() || '';
+  const publicKey = (document.getElementById('ep-pub') || {}).value?.trim() || '';
+  db.emailConfig = { serviceId, templateId, publicKey };
+  saveDB();
+}
+
+function carregarConfiguracaoEmailGlobal(){
+  const cfg = getEmailConfig();
+  const s = document.getElementById('ep-svc');
+  const t = document.getElementById('ep-tpl');
+  const k = document.getElementById('ep-pub');
+  if (s) s.value = cfg.serviceId || '';
+  if (t) t.value = cfg.templateId || '';
+  if (k) k.value = cfg.publicKey || '';
+}
+
+function notificarEventoAtividade(tipoEvento, projeto, atividade){
+  if(!projeto || !atividade) return;
+  const emailDestino = projeto.contatoEmail;
+  if(!emailDestino || typeof emailjs === 'undefined') return;
+  const cfg = getEffectiveEmailConfig(projeto);
+  if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+
+  const assunto = `[LION] Atualização no projeto ${projeto.name}`;
+  let mensagem = '';
+  if(tipoEvento === 'nova'){
+    mensagem = `Nova atividade criada no projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}
+Responsável: ${atividade.who || '-'}
+Quando: ${atividade.when || '-'}
+Status: ${atividade.status || 0}%`;
+  } else if(tipoEvento === 'exclusao'){
+    mensagem = `Uma atividade foi removida do projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}`;
+  } else if(tipoEvento === 'status'){
+    mensagem = `Status atualizado no projeto ${projeto.name}
+
+O que: ${atividade.what || '-'}
+Novo status: ${atividade.status || 0}%`;
+  } else {
+    return;
+  }
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId, cfg.templateId, {
+    to_email: emailDestino,
+    project: projeto.name,
+    from_name: session.user?.nome || session.user?.user || 'LION',
+    assunto,
+    mensagem
+  }).catch(err => console.error('Erro email atividade:', err));
+}
+
+function notificarEventoCronograma(tipoEvento, projeto, item, extras = {}) {
+  try {
+    if (!projeto || !item || typeof emailjs === 'undefined') return;
+    const emailDestino = projeto.contatoEmail;
+    if (!emailDestino) return;
+    const cfg = getEffectiveEmailConfig(projeto);
+    if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
+
+    let assunto = `[CRONOGRAMA] ${projeto.name}`;
+    let mensagem = '';
+    if (tipoEvento === 'novo_item') {
+      assunto = `[NOVO ITEM NO CRONOGRAMA] ${projeto.name}`;
+      mensagem = `Foi criado um novo item no cronograma.
+
+Projeto: ${projeto.name}
+Descrição: ${item.task || item.desc || item.descricao || '-'}
+Prazo inicial: ${item.start || item.inicio || '-'}
+Prazo final: ${item.end || item.fim || '-'}
+Responsável: ${item.resp || item.owner || item.responsavel || '-'}
+Status: ${item.status || 0}%`;
+    } else if (tipoEvento === 'status_alterado') {
+      assunto = `[STATUS ALTERADO] ${projeto.name}`;
+      mensagem = `O status de um item do cronograma foi alterado.
+
+Projeto: ${projeto.name}
+Descrição: ${item.task || item.desc || item.descricao || '-'}
+Status anterior: ${extras.statusAnterior || '-'}
+Novo status: ${extras.statusNovo || '-'}`;
+    } else if (tipoEvento === 'prazo_alterado') {
+      assunto = `[PRAZO ALTERADO] ${projeto.name}`;
+      mensagem = `O prazo de um item do cronograma foi alterado.
+
+Projeto: ${projeto.name}
+Descrição: ${item.task || item.desc || item.descricao || '-'}
+Prazo anterior: ${extras.prazoAnterior || '-'}
+Novo prazo: ${extras.prazoNovo || '-'}`;
+    } else if (tipoEvento === 'item_excluido') {
+      assunto = `[ITEM EXCLUÍDO] ${projeto.name}`;
+      mensagem = `Um item foi excluído do cronograma.
+
+Projeto: ${projeto.name}
+Descrição: ${item.task || item.desc || item.descricao || '-'}
+Responsável: ${item.resp || item.owner || item.responsavel || '-'}`;
+    } else if (tipoEvento === 'concluido') {
+      assunto = `[ITEM CONCLUÍDO] ${projeto.name}`;
+      mensagem = `Um item do cronograma foi concluído.
+
+Projeto: ${projeto.name}
+Descrição: ${item.task || item.desc || item.descricao || '-'}
+Responsável: ${item.resp || item.owner || item.responsavel || '-'}
+Status: ${item.status || 0}%`;
+    } else {
+      return;
+    }
+
+    emailjs.init(cfg.publicKey);
+    emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: emailDestino,
+      project: projeto.name,
+      from_name: session?.user?.nome || session?.user?.name || session?.user?.user || 'LION',
+      assunto,
+      mensagem
+    }).catch(err => console.error('Erro ao enviar email cronograma:', err));
+  } catch (err) {
+    console.error('Erro em notificarEventoCronograma:', err);
+  }
+}
+</script>
+
+<script>
+(function(){
+  var SESS='lion_remember_session';
+  function goApp(u){
+    session.user=u;
+    session.dashSc=u.role==='cli'?'cli':'op';
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    document.getElementById('screen-app').classList.add('active');
+    renderSidebar();
+    atualizarSidebarUsuario(u);
+    showDashboard();
+  }
+  function tryAuto(){
+    try{
+      var raw=localStorage.getItem(SESS);if(!raw)return false;
+      var u=JSON.parse(raw);
+      if(!u||!u.user||!u.status)return false;
+      var live=(db&&db.users)?db.users.find(function(x){return x.user===u.user;}):null;
+      var obj=live||u;
+      if(obj&&obj.status==='approved'){goApp(obj);return true;}
+      localStorage.removeItem(SESS);
+    }catch(e){localStorage.removeItem(SESS);}
+    return false;
+  }
+  // screen-login já está ativo no HTML — aparece imediatamente
+  // Tenta auto-login com sessão salva
+  if(tryAuto())return;
+  // Aguarda Firebase
+  var ov=document.getElementById('fb-loading');
+  window._fbLoad(function(ok){
+    if(ov)ov.style.display='none';
+    if(!session.user)tryAuto(); // tenta de novo com dados do firebase
+    else{
+      var live=db.users.find(function(u){return u.user===session.user.user;});
+      if(live){session.user=live;try{localStorage.setItem(SESS,JSON.stringify(live));}catch(e){}}
+      renderSidebar();
+      atualizarSidebarUsuario(session.user);
     }
   });
   setTimeout(function(){if(ov)ov.style.display='none';},6000);
