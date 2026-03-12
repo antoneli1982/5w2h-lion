@@ -388,18 +388,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 }
 @media(max-width:420px){
   .projects-grid{grid-template-columns:1fr !important}
-}
-/* Ajustes de usabilidade: Excel real + exclusao */
-#cron-table td:last-child{width:52px;text-align:center}
-#cron-table td:last-child button{
-  min-width:30px;
-  min-height:30px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-</style>
+}</style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1871,11 +1860,10 @@ function renderGantt(p){
         </div>
         <div class="cron-actions">
           <button class="btn-primary" style="font-size:11px;padding:8px 14px" onclick="openAddCronForm(${p.id})">➕ Adicionar Item</button>
-          <button class="btn-secondary" style="font-size:11px;padding:8px 14px;border-color:#38bdf844;box-shadow:0 0 0 1px #38bdf822 inset" onclick="openCronExcelImport(${p.id})">📥 Importar Excel</button>
+          <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="openCronExcelImport(${p.id})">📥 Importar Excel</button>
           <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="window.open('modelo-cronograma.xlsx','_blank')">📄 Modelo Excel</button>
         </div>
       </div>
-      <div style="margin-top:-4px;margin-bottom:12px;font-size:11px;color:#7fa8b8">Dica: para visualizar seu cronograma real, importe a planilha ou adicione itens. As linhas de exemplo foram removidas.</div>
       <div class="cron-summary-grid">
         <div class="cron-summary-card"><div class="v" style="color:#f5a800">${stats.total}</div><div class="l">Atividades</div></div>
         <div class="cron-summary-card"><div class="v" style="color:#4ade80">${stats.concluidas}</div><div class="l">Concluídas</div></div>
