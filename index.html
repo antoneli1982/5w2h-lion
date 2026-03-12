@@ -367,7 +367,12 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
   th{font-size:9px !important;padding:7px 5px !important}
   td{font-size:10px !important;padding:5px 4px !important}
 
-  /* Cronograma */
+  /* Cronograma 
+<button onclick="importarExcelCronograma()" style="margin-left:10px;background:#2563eb;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">
+📥 Importar Excel
+</button>
+<input type="file" id="excelCron" accept=".xlsx,.xls" style="display:none">
+ */
   .gantt-wrap{overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
   #cron-table{min-width:540px !important}
   .gantt-toolbar{flex-wrap:wrap !important;gap:6px !important;padding:10px !important}
@@ -564,6 +569,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     _init();
   })();
   </script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <!-- Firebase loading overlay -->
@@ -2919,5 +2925,41 @@ Status: ${item.status || '-'}`;
     console.error('Erro em notificarEventoCronograma:', err);
   }
 }/script>
+<script>
+function importarExcelCronograma(){
+ const input=document.getElementById('excelCron');
+ if(!input){return;}
+ input.click();
+ input.onchange=e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(evt){
+    const data=new Uint8Array(evt.target.result);
+    const wb=XLSX.read(data,{type:'array'});
+    const sheet=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(sheet);
+    if(!session || !session.projId){alert("Abra um projeto primeiro");return;}
+    const proj=db.projects.find(p=>p.id===session.projId);
+    if(!proj.gantt)proj.gantt=[];
+    rows.forEach(r=>{
+      proj.gantt.push({
+        desc:r["Descrição"]||r["Descricao"]||"",
+        week:r["Semana"]||"",
+        start:r["Prazo Inicial"]||"",
+        end:r["Prazo Final"]||"",
+        status:r["Status"]||"0%",
+        owner:r["Responsável"]||"",
+        obs:r["Observação"]||""
+      });
+    });
+    saveDB();
+    renderGantt(proj);
+    alert("Cronograma importado do Excel!");
+  };
+  reader.readAsArrayBuffer(file);
+ };
+}
+</script>
 </body>
 </html>
