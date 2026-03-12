@@ -146,31 +146,12 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 .content{padding:22px}
 
 /* ── DASHBOARD ── */
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
-.dash-card{background:var(--p2);border:1px solid #f5a80018;border-radius:16px;padding:20px 20px 16px;text-align:left;position:relative;overflow:hidden;transition:all .22s;cursor:default}
-.dash-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 16px 16px}
-.dash-card.dc-green::after{background:linear-gradient(90deg,#22c55e,#4ade80)}
-.dash-card.dc-sky::after{background:linear-gradient(90deg,#0ea5e9,#38bdf8)}
-.dash-card.dc-success::after{background:linear-gradient(90deg,#10b981,#34d399)}
-.dash-card.dc-warn::after{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
-.dash-card:hover{transform:translateY(-3px);border-color:#f5a80033;box-shadow:0 8px 30px #00000030}
-.dash-card .dc-icon{font-size:26px;margin-bottom:10px;display:block;line-height:1}
-.dash-card .val{font-family:'Montserrat',sans-serif;font-size:34px;font-weight:900;line-height:1;letter-spacing:-1px}
-.dash-card .lbl{font-size:11px;color:var(--gray);margin-top:5px;text-transform:uppercase;letter-spacing:.7px;font-weight:600}
-.dash-card .dc-sub{font-size:10px;color:var(--gray);margin-top:6px;padding-top:6px;border-top:1px solid #ffffff08}
-.dash-progress-row{display:flex;align-items:center;gap:14px;margin-bottom:28px;background:var(--p2);border:1px solid #f5a80018;border-radius:16px;padding:18px 22px}
-.dash-progress-ring{position:relative;flex-shrink:0}
-.dash-progress-ring svg{transform:rotate(-90deg)}
-.dash-progress-ring .ring-bg{fill:none;stroke:#ffffff0d;stroke-width:8}
-.dash-progress-ring .ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
-.dash-progress-ring .ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--green)}
-.dash-progress-text{flex:1}
-.dash-progress-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:800;margin-bottom:4px}
-.dash-progress-sub{font-size:12px;color:var(--gray)}
-.dash-progress-bar-wrap{margin-top:10px;background:#ffffff0d;border-radius:99px;height:6px;overflow:hidden}
-.dash-progress-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green2),var(--green));box-shadow:0 0 10px #f5a80040;transition:width .8s ease}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-.section-title{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-bottom:22px}
+.dash-card{background:var(--p2);border:1px solid #f5a80018;border-radius:12px;padding:16px 18px;text-align:center}
+.dash-card .val{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:800;line-height:1}
+.dash-card .lbl{font-size:11px;color:var(--gray);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:800}
 .scenario-tabs{display:flex;gap:8px;margin-bottom:18px}
 .sc-tab{padding:7px 16px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .2s;font-family:'Montserrat',sans-serif}
 .sc-tab.op{border-color:#38bdf844;color:var(--gray)}
@@ -180,23 +161,22 @@ body{font-family:'Inter',sans-serif;background:var(--p4);min-height:100vh;color:
 
 /* ── PROJECT CARDS ── */
 .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
-.project-card{background:var(--p2);border:1px solid #f5a80018;border-radius:16px;padding:20px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden}
-.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--green2),var(--green))}
+.project-card{background:var(--p2);border:1px solid #f5a80018;border-radius:14px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green2),var(--green))}
 .project-card.fin::before{background:linear-gradient(90deg,#d97706,var(--warn))}
-.project-card:hover{transform:translateY(-4px);border-color:#f5a80044;box-shadow:0 12px 36px #00000040}
-.project-card.fin:hover{border-color:#f59e0b44;box-shadow:0 12px 36px #f59e0b12}
+.project-card:hover{transform:translateY(-3px);border-color:#f5a80044;box-shadow:0 8px 30px #f5a80015}
+.project-card.fin:hover{border-color:#f59e0b44;box-shadow:0 8px 30px #f59e0b12}
 .pc-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
 .pc-name{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:800;color:var(--white);flex:1;margin-right:6px}
 .pc-del-btn{background:transparent;border:none;cursor:pointer;font-size:14px;padding:2px 5px;border-radius:5px;transition:background .15s;opacity:0;transition:opacity .2s}
 .project-card:hover .pc-del-btn{opacity:1}
 .pc-del-btn:hover{background:#ef444422}
-.pc-meta{font-size:11px;color:var(--gray);margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap}
-.pc-meta-chip{background:var(--p3);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--gray2)}
-.pc-bar-wrap{background:#ffffff0d;border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px}
-.pc-bar{height:100%;border-radius:99px;transition:width .6s;box-shadow:0 0 8px #f5a80030}
+.pc-meta{font-size:11px;color:var(--gray);margin-bottom:12px}
+.pc-bar-wrap{background:#ffffff0d;border-radius:99px;height:5px;overflow:hidden;margin-bottom:5px}
+.pc-bar{height:100%;border-radius:99px;transition:width .5s}
 .pc-bar-label{font-size:11px;color:var(--gray);display:flex;justify-content:space-between}
-.pc-tabs{display:flex;gap:6px;margin-top:14px}
-.pc-tab-btn{flex:1;padding:7px 8px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;border:1.5px solid #f5a80033;background:transparent;color:var(--gray2);transition:all .2s;text-align:center}
+.pc-tabs{display:flex;gap:6px;margin-top:12px}
+.pc-tab-btn{flex:1;padding:6px 8px;border-radius:7px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;border:1.5px solid #f5a80033;background:transparent;color:var(--gray2);transition:all .2s;text-align:center}
 .pc-tab-btn:hover,.pc-tab-btn.active{background:#f5a80018;color:var(--green);border-color:var(--green)}
 .pc-tab-btn.cron:hover,.pc-tab-btn.cron.active{background:#38bdf818;color:var(--sky);border-color:var(--sky)}
 
@@ -248,27 +228,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 .btn-secondary:hover{border-color:var(--green);color:var(--green)}
 .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .leg{border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;font-family:'Montserrat',sans-serif;background:var(--p3)}
-
-/* ── CRONOGRAMA HERO ── */
-.cron-hero{background:var(--p2);border:1px solid #f5a80020;border-radius:16px;padding:22px;margin-bottom:20px}
-.cron-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap}
-.cron-hero-title{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:900;color:var(--white);margin-bottom:4px}
-.cron-hero-sub{font-size:12px;color:var(--gray);max-width:360px}
-.cron-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
-.cron-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
-.cron-summary-card{background:var(--p3);border:1px solid #ffffff08;border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;transition:transform .2s}
-.cron-summary-card:hover{transform:translateY(-2px)}
-.cron-summary-card .csc-icon{font-size:20px;margin-bottom:6px;display:block}
-.cron-summary-card .v{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;line-height:1;letter-spacing:-1px}
-.cron-summary-card .l{font-size:10px;color:var(--gray);margin-top:4px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.cron-summary-card .csc-bar{margin-top:8px;background:#ffffff0d;border-radius:99px;height:3px;overflow:hidden}
-.cron-summary-card .csc-bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
-.cron-email-panel{background:var(--p3);border:1px solid #f5a80018;border-radius:10px;padding:14px 16px;margin-top:4px}
-.cron-email-list{font-size:11px;color:var(--gray);margin-top:4px;word-break:break-all}
-.cron-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif}
-.cron-badge.ok{background:#14532d33;color:#4ade80;border:1px solid #4ade8033}
-.cron-badge.warning{background:#78350f33;color:#fbbf24;border:1px solid #fbbf2433}
-.cron-badge.danger{background:#7f1d1d33;color:#f87171;border:1px solid #f8717133}
 
 /* ── CRONOGRAMA (GANTT) ── */
 .gantt-wrap{background:var(--p2);border:1px solid #f5a80020;border-radius:12px;overflow:hidden}
@@ -1255,53 +1214,12 @@ function showDashboard(){
   const dispSc=isSenior?session.dashSc:session.user.role;
   const scProjs=visibleBySc(dispSc);
 
-  const pending=totalRows-done;
-  const circumference=2*Math.PI*38;
-  const dashOffset=circumference-(avg/100)*circumference;
   document.getElementById('main-content').innerHTML=`<div class="fade-in">
     <div class="dash-grid">
-      <div class="dash-card dc-green">
-        <span class="dc-icon">📁</span>
-        <div class="val" style="color:#4ade80">${all.length}</div>
-        <div class="lbl">Projetos Ativos</div>
-        <div class="dc-sub">Total de projetos cadastrados</div>
-      </div>
-      <div class="dash-card dc-sky">
-        <span class="dc-icon">⚡</span>
-        <div class="val" style="color:#38bdf8">${totalRows}</div>
-        <div class="lbl">Total de Ações</div>
-        <div class="dc-sub">${pending} pendente${pending!==1?'s':''}</div>
-      </div>
-      <div class="dash-card dc-success">
-        <span class="dc-icon">✅</span>
-        <div class="val" style="color:#34d399">${done}</div>
-        <div class="lbl">Concluídas</div>
-        <div class="dc-sub">${totalRows?Math.round(done/totalRows*100):0}% do total</div>
-      </div>
-      <div class="dash-card dc-warn">
-        <span class="dc-icon">🎯</span>
-        <div class="val" style="color:#fbbf24">${avg}%</div>
-        <div class="lbl">Progresso Médio</div>
-        <div class="dc-sub">Todos os projetos</div>
-      </div>
-    </div>
-    <div class="dash-progress-row">
-      <div class="dash-progress-ring">
-        <svg width="96" height="96" viewBox="0 0 96 96">
-          <circle class="ring-bg" cx="48" cy="48" r="38"/>
-          <circle class="ring-fill" cx="48" cy="48" r="38"
-            stroke="#f5a800"
-            stroke-dasharray="${circumference}"
-            stroke-dashoffset="${dashOffset}"
-            style="transition:stroke-dashoffset .8s ease"/>
-        </svg>
-        <div class="ring-label">${avg}%</div>
-      </div>
-      <div class="dash-progress-text">
-        <div class="dash-progress-title">Progresso Geral dos Projetos</div>
-        <div class="dash-progress-sub">${done} de ${totalRows} ações concluídas em ${all.length} projeto${all.length!==1?'s':''}</div>
-        <div class="dash-progress-bar-wrap"><div class="dash-progress-bar" style="width:${avg}%"></div></div>
-      </div>
+      <div class="dash-card"><div class="val" style="color:var(--green)">${all.length}</div><div class="lbl">Projetos</div></div>
+      <div class="dash-card"><div class="val" style="color:var(--sky)">${totalRows}</div><div class="lbl">Ações</div></div>
+      <div class="dash-card"><div class="val" style="color:var(--success)">${done}</div><div class="lbl">Concluídas</div></div>
+      <div class="dash-card"><div class="val" style="color:var(--warn)">${avg}%</div><div class="lbl">Progresso</div></div>
     </div>
     ${tabsHTML}
     <div class="section-header">
@@ -1326,13 +1244,9 @@ function projCardHTML(p){
   const delBtn=session.user.role==='senior'?`<button class="pc-del-btn" title="Excluir" onclick="event.stopPropagation();askDelProj(${p.id})">🗑️</button>`:'';
   return`<div class="project-card ${isFin?'fin':''}" onclick="openProject(${p.id},'5w2h')">
     <div class="pc-header"><div class="pc-name">${p.name}</div>${delBtn}${badge}</div>
-    <div class="pc-meta">
-      <span class="pc-meta-chip">⚡ ${t} ação${t!==1?'s':''}</span>
-      <span class="pc-meta-chip">✅ ${d} concluída${d!==1?'s':''}</span>
-      <span class="pc-meta-chip">📅 ${p.gantt.length} no cronograma</span>
-    </div>
+    <div class="pc-meta">${t} ação${t!==1?'s':''} · ${d} concluída${d!==1?'s':''} · ${p.gantt.length} tarefa${p.gantt.length!==1?'s':''} no cronograma</div>
     <div class="pc-bar-wrap"><div class="pc-bar" style="width:${avg}%;background:${barColor}"></div></div>
-    <div class="pc-bar-label"><span>Progresso 5W2H</span><span style="color:${barColor};font-weight:800">${avg}%</span></div>
+    <div class="pc-bar-label"><span>Progresso 5W2H</span><span style="color:${barColor};font-weight:700">${avg}%</span></div>
     <div class="pc-tabs">
       <div class="pc-tab-btn active" onclick="event.stopPropagation();openProject(${p.id},'5w2h')">📋 5W2H</div>
       <div class="pc-tab-btn cron" onclick="event.stopPropagation();openProject(${p.id},'gantt')">📅 Cronograma</div>
@@ -1951,41 +1865,12 @@ function renderGantt(p){
         </div>
       </div>
       <div class="cron-summary-grid">
-        <div class="cron-summary-card">
-          <span class="csc-icon">📋</span>
-          <div class="v" style="color:#f5a800">${stats.total}</div>
-          <div class="l">Atividades</div>
-        </div>
-        <div class="cron-summary-card">
-          <span class="csc-icon">✅</span>
-          <div class="v" style="color:#4ade80">${stats.concluidas}</div>
-          <div class="l">Concluídas</div>
-          <div class="csc-bar"><div class="csc-bar-fill" style="width:${stats.total?Math.round(stats.concluidas/stats.total*100):0}%;background:#4ade80"></div></div>
-        </div>
-        <div class="cron-summary-card">
-          <span class="csc-icon">🔄</span>
-          <div class="v" style="color:#38bdf8">${stats.andamento}</div>
-          <div class="l">Em andamento</div>
-          <div class="csc-bar"><div class="csc-bar-fill" style="width:${stats.total?Math.round(stats.andamento/stats.total*100):0}%;background:#38bdf8"></div></div>
-        </div>
-        <div class="cron-summary-card">
-          <span class="csc-icon">🔴</span>
-          <div class="v" style="color:#ef4444">${stats.atrasadas}</div>
-          <div class="l">Atrasadas</div>
-          <div class="csc-bar"><div class="csc-bar-fill" style="width:${stats.total?Math.round(stats.atrasadas/stats.total*100):0}%;background:#ef4444"></div></div>
-        </div>
-        <div class="cron-summary-card">
-          <span class="csc-icon">⚠️</span>
-          <div class="v" style="color:#f59e0b">${stats.vencendo}</div>
-          <div class="l">Vencendo</div>
-          <div class="csc-bar"><div class="csc-bar-fill" style="width:${stats.total?Math.round(stats.vencendo/stats.total*100):0}%;background:#f59e0b"></div></div>
-        </div>
-        <div class="cron-summary-card">
-          <span class="csc-icon">📈</span>
-          <div class="v" style="color:#a78bfa">${stats.progresso}%</div>
-          <div class="l">Progresso</div>
-          <div class="csc-bar"><div class="csc-bar-fill" style="width:${stats.progresso}%;background:#a78bfa"></div></div>
-        </div>
+        <div class="cron-summary-card"><div class="v" style="color:#f5a800">${stats.total}</div><div class="l">Atividades</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#4ade80">${stats.concluidas}</div><div class="l">Concluídas</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#38bdf8">${stats.andamento}</div><div class="l">Em andamento</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#ef4444">${stats.atrasadas}</div><div class="l">Atrasadas</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#f59e0b">${stats.vencendo}</div><div class="l">Vencendo</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#a78bfa">${stats.progresso}%</div><div class="l">Progresso</div></div>
       </div>
       <div id="cron-alerts-area"></div>
       <div class="cron-email-panel">

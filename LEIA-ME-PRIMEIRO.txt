@@ -1,0 +1,22 @@
+PACOTE FINAL CORRIGIDO
+
+Este ZIP usa a base do seu projeto real e corrige:
+- layout bonito do cronograma com cards no topo
+- upload do Excel
+- remoção das linhas falsas de demonstração
+- estado vazio correto quando o projeto não tem tarefas
+
+Arquivos incluídos na raiz:
+- index.html
+- manifest.json
+- sw.js
+- icon-192.png
+- icon-512.png
+- modelo-cronograma.xlsx
+
+Como subir:
+1. Extraia este ZIP
+2. Envie ESTES arquivos para a raiz do repositório GitHub
+3. Substitua os arquivos atuais
+4. Faça commit
+5. No navegador, force atualização com Ctrl+Shift+R
