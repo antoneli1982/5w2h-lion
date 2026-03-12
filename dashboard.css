@@ -1,0 +1,9 @@
+
+body{background:#0b1220;color:#f3f4f6;font-family:Arial;padding:20px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}
+.card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px}
+.value{font-size:26px;font-weight:bold}
+.panel{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;margin-bottom:20px}
+.panel-title{font-weight:bold;margin-bottom:10px}
+.gantt-row{margin-bottom:8px}
+.gantt-bar{background:#f59e0b;height:16px;border-radius:6px;text-align:center;font-size:10px}
