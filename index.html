@@ -367,12 +367,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
   th{font-size:9px !important;padding:7px 5px !important}
   td{font-size:10px !important;padding:5px 4px !important}
 
-  /* Cronograma 
-<button onclick="importarExcelCronograma()" style="margin-left:10px;background:#2563eb;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">
-📥 Importar Excel
-</button>
-<input type="file" id="excelCron" accept=".xlsx,.xls" style="display:none">
- */
+  /* Cronograma */
   .gantt-wrap{overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
   #cron-table{min-width:540px !important}
   .gantt-toolbar{flex-wrap:wrap !important;gap:6px !important;padding:10px !important}
@@ -397,6 +392,7 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   (function(){
     var FB_CFG = {
@@ -569,7 +565,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
     _init();
   })();
   </script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <!-- Firebase loading overlay -->
@@ -721,6 +716,11 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
 <div class="field">
 <label>WhatsApp de Contato</label>
 <input id="np-whatsapp" type="text" placeholder="5511999999999">
+</div>
+
+<div class="field">
+<label>Emails adicionais do projeto</label>
+<textarea id="np-emails" placeholder="qualidade@empresa.com; lider@empresa.com" style="width:100%;background:var(--p3);border:1.5px solid #f5a80020;border-radius:8px;padding:11px 14px;color:var(--white);font-size:13px;font-family:'Inter',sans-serif;outline:none;min-height:74px;resize:vertical"></textarea>
 </div>
 
 <div class="field"><label>Cenário</label>
@@ -1272,6 +1272,7 @@ function createProject(){
   const sc = document.getElementById('np-sc').value;
   const contatoEmail = (document.getElementById('np-email') || {}).value?.trim() || '';
   const contatoWhatsapp = (document.getElementById('np-whatsapp') || {}).value?.trim() || '';
+  const emailsProjeto = (document.getElementById('np-emails') || {}).value?.trim() || '';
 
   if(!name) return;
 
@@ -1287,7 +1288,8 @@ function createProject(){
     allowedUsers,
     createdBy: creator.user,
     contatoEmail,
-    contatoWhatsapp
+    contatoWhatsapp,
+    emailsProjeto
   });
 
   saveDB();
@@ -1296,6 +1298,7 @@ function createProject(){
   document.getElementById('np-name').value = '';
   if(document.getElementById('np-email')) document.getElementById('np-email').value = '';
   if(document.getElementById('np-whatsapp')) document.getElementById('np-whatsapp').value = '';
+  if(document.getElementById('np-emails')) document.getElementById('np-emails').value = '';
 
   showDashboard();
 }
@@ -1645,8 +1648,200 @@ function buildLegend(){
 const GANTT_COLORS=['#f5a800','#38bdf8','#f59e0b','#a78bfa','#4ade80','#ef4444','#fb923c'];
 const STATUS_CRON={0:{text:'#7fa8b8',label:'Não iniciado'},25:{text:'#f59e0b',label:'Iniciado'},50:{text:'#38bdf8',label:'Em andamento'},75:{text:'#a78bfa',label:'Avançado'},100:{text:'#f5a800',label:'Concluído'}};
 
+function parseFlexibleDate(value){
+  if(!value) return null;
+  if(value instanceof Date && !isNaN(value)) return value;
+  const raw=String(value).trim();
+  if(!raw) return null;
+  const num=Number(raw);
+  if(!isNaN(num) && num>20000){
+    const excelEpoch=new Date(Date.UTC(1899,11,30));
+    const d=new Date(excelEpoch.getTime()+num*86400000);
+    return isNaN(d)?null:d;
+  }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    const d=new Date(raw+'T00:00:00');
+    return isNaN(d)?null:d;
+  }
+  const m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    const day=Number(m[1]), mon=Number(m[2])-1, year=Number(m[3].length===2?'20'+m[3]:m[3]);
+    const d=new Date(year,mon,day);
+    return isNaN(d)?null:d;
+  }
+  const d=new Date(raw);
+  return isNaN(d)?null:d;
+}
+function formatDateBR(value){
+  const d=parseFlexibleDate(value);
+  if(!d) return value||'';
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yy=d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+}
+function normalizeStoredDate(value){
+  const d=parseFlexibleDate(value);
+  if(!d) return value||'';
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yy=d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+}
+function toInputDate(value){
+  const d=parseFlexibleDate(value);
+  if(!d) return '';
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yy=d.getFullYear();
+  return `${yy}-${mm}-${dd}`;
+}
+function getProjectEmailList(p){
+  const raw=[p&&p.contatoEmail||'', p&&p.emailsProjeto||''].join(';');
+  return Array.from(new Set(raw.split(/[;,\n]+/).map(s=>s.trim()).filter(Boolean)));
+}
+function copyProjectEmails(pid){
+  const p=db.projects.find(x=>x.id===pid); if(!p) return;
+  const txt=getProjectEmailList(p).join('; ');
+  if(!txt){ showToast('Nenhum email cadastrado.'); return; }
+  navigator.clipboard?.writeText(txt).then(()=>showToast('Lista de emails copiada!')).catch(()=>prompt('Copie a lista:',txt));
+}
+function openProjectEmailAll(pid){
+  const p=db.projects.find(x=>x.id===pid); if(!p) return;
+  const emails=getProjectEmailList(p); if(!emails.length){ showToast('Nenhum email cadastrado.'); return; }
+  const assunto=encodeURIComponent(`[CRONOGRAMA] ${p.name}`);
+  const corpo=encodeURIComponent(`Projeto: ${p.name}
+Progresso do cronograma: ${calcCronProgress(p)}%
+Acompanhe as atualizações no LION 5W2H.`);
+  window.open(`mailto:${emails.join(',')}?subject=${assunto}&body=${corpo}`,'_blank');
+}
+function getCronStats(p){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const stats={total:0, concluidas:0, andamento:0, atrasadas:0, vencendo:0, progresso:calcCronProgress(p)};
+  (p.gantt||[]).forEach(item=>{
+    stats.total++;
+    const status=Number(item.status||0);
+    if(status>=100) stats.concluidas++; else if(status>0) stats.andamento++;
+    const end=parseFlexibleDate(item.end);
+    if(end && status<100){
+      end.setHours(0,0,0,0);
+      const diff=Math.round((end-today)/86400000);
+      if(diff<0) stats.atrasadas++;
+      else if(diff<=3) stats.vencendo++;
+    }
+  });
+  return stats;
+}
+function getCronAlerts(p){
+  const alerts=[];
+  (p.gantt||[]).forEach(item=>{
+    const status=Number(item.status||0);
+    const end=parseFlexibleDate(item.end);
+    if(end && status<100){
+      const today=new Date(); today.setHours(0,0,0,0); end.setHours(0,0,0,0);
+      const diff=Math.round((end-today)/86400000);
+      if(diff<0) alerts.push({type:'danger', text:`Atrasada: ${item.task||item.desc||'Sem descrição'} (${Math.abs(diff)} dia(s))`});
+      else if(diff<=3) alerts.push({type:'warning', text:`Vence em ${diff} dia(s): ${item.task||item.desc||'Sem descrição'}`});
+    }
+  });
+  return alerts.slice(0,6);
+}
+function getCronRowClass(item){
+  const status=Number(item.status||0);
+  const end=parseFlexibleDate(item.end);
+  if(end && status<100){
+    const today=new Date(); today.setHours(0,0,0,0); end.setHours(0,0,0,0);
+    const diff=Math.round((end-today)/86400000);
+    if(diff<0) return 'cron-row-danger';
+    if(diff<=3) return 'cron-row-warning';
+  }
+  return '';
+}
+function statusLabelByValue(v){
+  return (STATUS_CRON[v]&&STATUS_CRON[v].label)||'Não iniciado';
+}
+function openCronExcelImport(pid){
+  const inp=document.getElementById('cron-excel-input');
+  if(!inp) return;
+  inp.dataset.pid=pid;
+  inp.value='';
+  inp.click();
+}
+function handleCronExcelSelected(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  const pid=Number(ev.target.dataset.pid||session.projId||0);
+  if(file && pid) importCronFromExcel(pid,file);
+}
+function normalizeImportedStatus(value){
+  const raw=String(value||'').trim().toLowerCase();
+  if(raw===''||raw==='nan') return 0;
+  const num=parseInt(raw.replace('%',''),10);
+  if(!isNaN(num)){
+    if(num>=100) return 100;
+    if(num>=75) return 75;
+    if(num>=50) return 50;
+    if(num>=25) return 25;
+    return 0;
+  }
+  if(raw.includes('concl')) return 100;
+  if(raw.includes('avanç')) return 75;
+  if(raw.includes('andam')) return 50;
+  if(raw.includes('inic')) return 25;
+  return 0;
+}
+function importCronFromExcel(pid,file){
+  const p=db.projects.find(x=>x.id===pid); if(!p) return;
+  if(typeof XLSX==='undefined'){ showToast('Biblioteca de Excel não carregada.'); return; }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const sheet=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
+      if(!rows.length){ showToast('Planilha vazia.'); return; }
+      const novos=[]; const erros=[];
+      rows.forEach((r,idx)=>{
+        const task=r['Descrição']||r['Descricao']||r['Atividade']||r['Tarefa']||r['Task']||'';
+        const week=r['Semana']||r['Week']||'';
+        const start=r['Prazo Inicial']||r['Inicio']||r['Início']||r['Start']||'';
+        const end=r['Prazo Final']||r['Fim']||r['End']||'';
+        const resp=r['Responsável']||r['Responsavel']||r['Owner']||r['Resp']||'';
+        const obs=r['Observação']||r['Observacao']||r['Obs']||'';
+        const status=normalizeImportedStatus(r['Status']||r['Progresso']||'0');
+        if(!String(task).trim()){ erros.push(`Linha ${idx+2}: descrição vazia`); return; }
+        novos.push({
+          id: db.nextGanttId++,
+          task:String(task).trim(),
+          week:String(week).trim(),
+          start: normalizeStoredDate(start),
+          end: normalizeStoredDate(end),
+          resp:String(resp).trim(),
+          obs:String(obs).trim(),
+          status:status,
+          color:GANTT_COLORS[(p.gantt.length+novos.length)%GANTT_COLORS.length]
+        });
+      });
+      if(!novos.length){ alert(`Nenhuma linha válida para importar.\n${erros.join('\n')}`); return; }
+      const replace=confirm(`Importar ${novos.length} item(ns)?
+OK = substituir cronograma atual
+Cancelar = adicionar ao cronograma existente`);
+      if(replace) p.gantt=[];
+      p.gantt=p.gantt.concat(novos);
+      saveDB();
+      renderGantt(p);
+      let msg=`${novos.length} item(ns) importado(s) com sucesso.`;
+      if(erros.length) msg+=`\n\nAvisos:\n${erros.slice(0,8).join('\n')}`;
+      alert(msg);
+    }catch(err){ console.error(err); alert('Erro ao importar Excel. Verifique o modelo da planilha.'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
 function renderGantt(p){
   session.ganttOffset=session.ganttOffset||0;
+  const stats=getCronStats(p);
+  const emails=getProjectEmailList(p);
   document.getElementById('main-content').innerHTML=`<div class="fade-in">
     <div class="view-header">
       <button class="btn-back" onclick="showDashboard()">← Voltar</button>
@@ -1656,23 +1851,56 @@ function renderGantt(p){
         <button class="view-tab cron active" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
       </div>
     </div>
+    <input type="file" id="cron-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleCronExcelSelected(event)">
+    <div class="cron-hero">
+      <div class="cron-hero-top">
+        <div>
+          <div class="cron-hero-title">📅 Cronograma em destaque</div>
+          <div class="cron-hero-sub">Acompanhe prazos, risco, responsáveis e progresso do projeto em uma única tela.</div>
+        </div>
+        <div class="cron-actions">
+          <button class="btn-primary" style="font-size:11px;padding:8px 14px" onclick="openAddCronForm(${p.id})">➕ Adicionar Item</button>
+          <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="openCronExcelImport(${p.id})">📥 Importar Excel</button>
+          <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="window.open('modelo-cronograma.xlsx','_blank')">📄 Modelo Excel</button>
+        </div>
+      </div>
+      <div class="cron-summary-grid">
+        <div class="cron-summary-card"><div class="v" style="color:#f5a800">${stats.total}</div><div class="l">Atividades</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#4ade80">${stats.concluidas}</div><div class="l">Concluídas</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#38bdf8">${stats.andamento}</div><div class="l">Em andamento</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#ef4444">${stats.atrasadas}</div><div class="l">Atrasadas</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#f59e0b">${stats.vencendo}</div><div class="l">Vencendo</div></div>
+        <div class="cron-summary-card"><div class="v" style="color:#a78bfa">${stats.progresso}%</div><div class="l">Progresso</div></div>
+      </div>
+      <div id="cron-alerts-area"></div>
+      <div class="cron-email-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;color:#f5a800">📨 Emails do projeto (${emails.length})</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-secondary" style="padding:6px 10px;font-size:11px" onclick="copyProjectEmails(${p.id})">📋 Copiar lista</button>
+            <button class="btn-secondary" style="padding:6px 10px;font-size:11px" onclick="openProjectEmailAll(${p.id})">📧 Enviar para todos</button>
+          </div>
+        </div>
+        <div class="cron-email-list">${emails.length?emails.join(' • '):'Nenhum email cadastrado no projeto.'}</div>
+      </div>
+    </div>
     <div class="gantt-wrap">
       <div class="gantt-toolbar">
         <div class="gantt-title">📅 Cronograma de Atividades</div>
-        <button class="btn-primary" style="font-size:11px;padding:7px 16px" onclick="openAddCronForm(${p.id})">➕ Adicionar Item</button>
+        <div class="gantt-period">${stats.atrasadas>0?'🔴 atenção a atrasos':stats.vencendo>0?'🟡 prazos próximos':'🟢 cronograma controlado'}</div>
       </div>
       <div id="cron-progress-area" style="padding:12px 18px 0"></div>
-      <div class="cron-table-wrap"><table style="border-collapse:collapse;width:100%;min-width:640px" id="cron-table">
+      <div class="cron-table-wrap"><table style="border-collapse:collapse;width:100%;min-width:760px" id="cron-table">
           <thead>
             <tr style="background:#2a1e00">
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:42px">#</th>
-              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:left;border-right:1px solid #f5a80018;min-width:200px">DESCRIÇÃO</th>
+              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:left;border-right:1px solid #f5a80018;min-width:220px">DESCRIÇÃO</th>
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:60px">SEMANA</th>
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:100px">PRAZO INICIAL</th>
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:100px">PRAZO FINAL</th>
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:130px">STATUS</th>
-              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:110px">RESPONSÁVEL</th>
-              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:left;border-right:1px solid #f5a80018;min-width:130px">OBSERVAÇÃO</th>
+              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;border-right:1px solid #f5a80018;width:130px">RESPONSÁVEL</th>
+              <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:left;border-right:1px solid #f5a80018;min-width:150px">OBSERVAÇÃO</th>
               <th style="padding:10px 9px;color:#f5a800;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;letter-spacing:.5px;text-align:center;width:46px"></th>
             </tr>
           </thead>
@@ -1697,9 +1925,7 @@ function renderGantt(p){
     </div>
   </div>`;
   renderCronRows(p);
-}
-
-function calcCronProgress(p){
+}function calcCronProgress(p){
   if(!p.gantt||!p.gantt.length)return 0;
   const s=p.gantt.reduce((a,g)=>a+(g.status||0),0);
   return Math.round(s/p.gantt.length);
@@ -1708,88 +1934,74 @@ function calcCronProgress(p){
 function renderCronRows(p){
   const tbody=document.getElementById('cron-tbody');
   if(!tbody)return;
-  // Mostrar dados de exemplo se cronograma vazio
+  const stats=getCronStats(p);
+  const alerts=getCronAlerts(p);
   var isGanttDemo = !p.gantt || p.gantt.length === 0;
   if(isGanttDemo){
-    var originalGantt = p.gantt;
     p = Object.assign({}, p, {gantt: [
-    {id:1,desc:'Levantamento de requisitos',semana:'1',inicio:'01/04/2026',fim:'07/04/2026',status:'Em andamento',resp:'João Silva',obs:'Reunião com stakeholders'},
-    {id:2,desc:'Planejamento e cronograma',semana:'2',inicio:'08/04/2026',fim:'14/04/2026',status:'Não iniciado',resp:'Maria Souza',obs:''},
-    {id:3,desc:'Execução das ações',semana:'3-4',inicio:'15/04/2026',fim:'28/04/2026',status:'Não iniciado',resp:'Carlos Lima',obs:'Ver relatório anterior'},
-    {id:4,desc:'Revisão e ajustes finais',semana:'5',inicio:'29/04/2026',fim:'05/05/2026',status:'Não iniciado',resp:'João Silva',obs:''}
-  ]});
-    var demoBarC = document.getElementById('cron-demo-bar');
-    if(!demoBarC){
-      var bc = document.createElement('div');
-      bc.id='cron-demo-bar';
-      bc.style.cssText='background:#1a1200;border:1px solid #f5a80033;border-radius:8px;padding:8px 14px;margin:0 18px 10px;font-size:11px;color:#f5a800;font-family:Montserrat,sans-serif;display:flex;align-items:center;gap:8px';
-      bc.innerHTML='<span style="font-size:14px">💡</span><span><b>Dados de exemplo</b> — Clique em <b>➕ Adicionar Item</b> para começar!</span>';
-      var cronWrap = document.querySelector('.gantt-wrap');
-      if(cronWrap){ var toolbar=cronWrap.querySelector('.gantt-toolbar'); if(toolbar) toolbar.after(bc); }
-    }
-  } else {
-    var demoBarC = document.getElementById('cron-demo-bar');
-    if(demoBarC) demoBarC.remove();
+      {id:1,task:'Levantamento de requisitos',week:'1',start:'01/04/2026',end:'07/04/2026',status:50,resp:'João Silva',obs:'Reunião com stakeholders'},
+      {id:2,task:'Planejamento e cronograma',week:'2',start:'08/04/2026',end:'14/04/2026',status:0,resp:'Maria Souza',obs:''},
+      {id:3,task:'Execução das ações',week:'3-4',start:'15/04/2026',end:'28/04/2026',status:0,resp:'Carlos Lima',obs:'Ver relatório anterior'},
+      {id:4,task:'Revisão e ajustes finais',week:'5',start:'29/04/2026',end:'05/05/2026',status:0,resp:'João Silva',obs:''}
+    ]});
   }
-  const avg=calcCronProgress(p);
-  // update progress bar
   const pa=document.getElementById('cron-progress-area');
   if(pa){
-    const barColor=avg===100?'#f5a800':avg>=75?'#a78bfa':avg>=50?'#38bdf8':avg>=25?'#f59e0b':'#7fa8b8';
+    const avg=stats.progresso;
+    const barColor=avg===100?'#4ade80':avg>=75?'#a78bfa':avg>=50?'#38bdf8':avg>=25?'#f59e0b':'#7fa8b8';
     pa.innerHTML=`
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;color:#c8dde5;white-space:nowrap">Progresso Geral: <span style="color:${barColor}">${avg}%</span></span>
-        <div style="flex:1;background:#ffffff0d;border-radius:99px;height:8px;overflow:hidden">
+        <div style="flex:1;min-width:180px;background:#ffffff0d;border-radius:99px;height:8px;overflow:hidden">
           <div style="width:${avg}%;height:100%;background:linear-gradient(90deg,${barColor},${barColor}cc);border-radius:99px;box-shadow:0 0 8px ${barColor}88;transition:width .5s"></div>
         </div>
+        <span class="cron-badge ${stats.atrasadas>0?'danger':stats.vencendo>0?'warning':'ok'}">${stats.atrasadas>0?'Atrasos ativos':stats.vencendo>0?'Prazos próximos':'Cronograma saudável'}</span>
       </div>`;
+  }
+  const alertsArea=document.getElementById('cron-alerts-area');
+  if(alertsArea){
+    alertsArea.innerHTML=alerts.length?`<div class="cron-alerts">${alerts.map(a=>`<div class="cron-alert-pill" style="border-color:${a.type==='danger'?'#ef444433':'#f59e0b44'};color:${a.type==='danger'?'#fca5a5':'#fcd34d'}">${a.type==='danger'?'🔴':'🟡'} ${a.text}</div>`).join('')}</div>`:'';
   }
   tbody.innerHTML='';
   (p.gantt||[]).forEach((row,i)=>{
-    const stColor=STATUS_CRON[row.status||0].text;
-    const stLabel=STATUS_CRON[row.status||0].label;
+    const statusVal=Number(row.status||0);
+    const stColor=STATUS_CRON[statusVal].text;
     const tr=document.createElement('tr');
+    tr.className=getCronRowClass(row);
     tr.style.cssText='border-bottom:1px solid #f5a80010;'+(i%2===0?'background:#111111':'background:#1a1a1a');
     tr.innerHTML=`
       <td style="padding:8px 9px;text-align:center;font-size:11px;color:#f5a800;font-weight:700;border-right:1px solid #f5a80010">${i+1}</td>
       <td style="padding:8px 9px;font-size:11px;color:#e2eef5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'task')">${row.task||''}</td>
       <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'week')">${row.week||''}</td>
-      <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'start')">${row.start||''}</td>
-      <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'end')">${row.end||''}</td>
+      <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'start')">${formatDateBR(row.start)||''}</td>
+      <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'end')">${formatDateBR(row.end)||''}</td>
       <td style="padding:6px 9px;text-align:center;border-right:1px solid #f5a80010">
         <select onchange="updateCronStatus(${p.id},${row.id},this.value)" style="background:#0d0d0d;border:1.5px solid ${stColor};border-radius:6px;color:${stColor};font-size:10px;font-weight:700;padding:3px 5px;width:100%;cursor:pointer;font-family:Montserrat,sans-serif;outline:none">
-          ${[0,25,50,75,100].map(v=>`<option value="${v}" ${(row.status||0)===v?'selected':''}>${v}% — ${STATUS_CRON[v].label}</option>`).join('')}
+          ${[0,25,50,75,100].map(v=>`<option value="${v}" ${statusVal===v?'selected':''}>${v}% — ${STATUS_CRON[v].label}</option>`).join('')}
         </select>
-        <div style="margin-top:3px;background:#ffffff0d;border-radius:99px;height:3px;overflow:hidden">
-          <div style="width:${row.status||0}%;height:100%;background:${stColor};border-radius:99px"></div>
-        </div>
+        <div style="margin-top:3px;background:#ffffff0d;border-radius:99px;height:3px;overflow:hidden"><div style="width:${statusVal}%;height:100%;background:${stColor};border-radius:99px"></div></div>
       </td>
       <td style="padding:8px 9px;text-align:center;font-size:11px;color:#c8dde5;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'resp')">${row.resp||''}</td>
       <td style="padding:8px 9px;font-size:11px;color:#7fa8b8;border-right:1px solid #f5a80010;cursor:text" onclick="editCronCell(this,${p.id},${row.id},'obs')">${row.obs||''}</td>
-      <td style="padding:6px 9px;text-align:center">
-        <button onclick="session.delGanttTarget={pid:${p.id},gid:${row.id}};openModal('modal-del-gantt')" style="background:#1a0000;color:#ef4444;border:1px solid #ef444433;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:11px">🗑️</button>
-      </td>`;
+      <td style="padding:6px 9px;text-align:center"><button onclick="session.delGanttTarget={pid:${p.id},gid:${row.id}};openModal('modal-del-gantt')" style="background:#1a0000;color:#ef4444;border:1px solid #ef444433;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:11px">🗑️</button></td>`;
     tbody.appendChild(tr);
   });
-  // empty state
   if(!p.gantt||!p.gantt.length){
-    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:#7fa8b8;font-size:12px">Nenhuma tarefa cadastrada. Clique em "➕ Adicionar Item" para começar.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:#7fa8b8;font-size:12px">Nenhuma tarefa cadastrada. Use <b>➕ Adicionar Item</b> ou <b>📥 Importar Excel</b> para começar.</td></tr>`;
   }
-}
-
-function editCronCell(td,pid,gid,field){
+}function editCronCell(td,pid,gid,field){
   const p=db.projects.find(x=>x.id===pid);
   const row=p&&p.gantt&&p.gantt.find(g=>g.id===gid);
   if(!row)return;
   const cur=row[field]||'';
-  const isDate=(field==='inicio'||field==='fim'||field==='when');
+  const isDate=(field==='start'||field==='end'||field==='inicio'||field==='fim'||field==='when');
   const inp=document.createElement(field==='task'||field==='obs'?'textarea':'input');
-  if(isDate){inp.type='date';const pts=cur?cur.split('/'):[];inp.value=pts.length===3?pts[2]+'-'+pts[1]+'-'+pts[0]:cur;}
+  if(isDate){inp.type='date';inp.value=toInputDate(cur);}
   else{inp.value=cur;}
   inp.style.cssText='width:100%;background:#0d0d0d;color:#f5a800;border:1.5px solid #f5a800;border-radius:4px;padding:3px 5px;font-size:11px;outline:none;font-family:Inter,sans-serif;resize:none';
   if(field==='start'||field==='end')inp.type='date';
   td.textContent='';td.appendChild(inp);inp.focus();
-  const save=()=>{const anterior=row[field]||''; row[field]=inp.value; saveDB(); epNotify(p); if(field==='start' || field==='end'){ notificarEventoCronograma('prazo_alterado', p, row, { prazoAnterior: anterior, prazoNovo: inp.value }); } renderCronRows(p);};
+  const save=()=>{const anterior=row[field]||''; row[field]=isDate?normalizeStoredDate(inp.value):inp.value; saveDB(); epNotify(p); if(field==='start' || field==='end'){ notificarEventoCronograma('prazo_alterado', p, row, { prazoAnterior: formatDateBR(anterior), prazoNovo: formatDateBR(row[field]) }); } renderCronRows(p);};
   inp.onblur=save;
   inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}};
 }
@@ -1817,8 +2029,8 @@ function addCronTask(pid){
     id:db.nextGanttId++,
     task,
     week:document.getElementById('gf-week').value.trim(),
-    start:document.getElementById('gf-start').value,
-    end:document.getElementById('gf-end').value,
+    start:normalizeStoredDate(document.getElementById('gf-start').value),
+    end:normalizeStoredDate(document.getElementById('gf-end').value),
     resp:document.getElementById('gf-resp').value.trim(),
     obs:document.getElementById('gf-obs').value.trim(),
     status:0,
@@ -2487,188 +2699,49 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <script>
-(function(){
-  var SESS='lion_remember_session';
-  function goApp(u){
-    session.user=u;
-    session.dashSc=u.role==='cli'?'cli':'op';
-    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-    document.getElementById('screen-app').classList.add('active');
-    renderSidebar();
-    atualizarSidebarUsuario(u);
-    showDashboard();
-  }
-  function tryAuto(){
-    try{
-      var raw=localStorage.getItem(SESS);if(!raw)return false;
-      var u=JSON.parse(raw);
-      if(!u||!u.user||!u.status)return false;
-      var live=(db&&db.users)?db.users.find(function(x){return x.user===u.user;}):null;
-      var obj=live||u;
-      if(obj&&obj.status==='approved'){goApp(obj);return true;}
-      localStorage.removeItem(SESS);
-    }catch(e){localStorage.removeItem(SESS);}
-    return false;
-  }
-  // screen-login já está ativo no HTML — aparece imediatamente
-  // Tenta auto-login com sessão salva
-  if(tryAuto())return;
-  // Aguarda Firebase
-  var ov=document.getElementById('fb-loading');
-  window._fbLoad(function(ok){
-    if(ov)ov.style.display='none';
-    if(!session.user)tryAuto(); // tenta de novo com dados do firebase
-    else{
-      var live=db.users.find(function(u){return u.user===session.user.user;});
-      if(live){session.user=live;try{localStorage.setItem(SESS,JSON.stringify(live));}catch(e){}}
-      renderSidebar();
-      atualizarSidebarUsuario(session.user);
-    }
-  });
-  setTimeout(function(){if(ov)ov.style.display='none';},6000);
-})();
-  // ===== CONFIGURAÇÃO GLOBAL DE EMAIL =====
-function getEmailConfig(){
-  if(!db.emailConfig){
-    db.emailConfig = { serviceId:'', templateId:'', publicKey:'' };
-  }
-  return db.emailConfig;
-}
+// ===== CONFIGURAÇÃO GLOBAL DE EMAIL E ALERTAS =====
+function getEmailConfig(){ if(!db.emailConfig){ db.emailConfig={serviceId:'',templateId:'',publicKey:''}; } return db.emailConfig; }
+function getEffectiveEmailConfig(p){ const globalCfg=getEmailConfig(); const localCfg=(p&&p.emailjsConfig)?p.emailjsConfig:{}; return {serviceId: globalCfg.serviceId || localCfg.serviceId || '', templateId: globalCfg.templateId || localCfg.templateId || '', publicKey: globalCfg.publicKey || localCfg.publicKey || ''}; }
+function salvarConfiguracaoEmailGlobal(){ const serviceId=(document.getElementById('ep-svc')||{}).value?.trim()||''; const templateId=(document.getElementById('ep-tpl')||{}).value?.trim()||''; const publicKey=(document.getElementById('ep-pub')||{}).value?.trim()||''; db.emailConfig={serviceId,templateId,publicKey}; saveDB(); if(typeof showToast==='function') showToast('Configuração global de email salva!'); }
+function carregarConfiguracaoEmailGlobal(){ const cfg=getEmailConfig(); const s=document.getElementById('ep-svc'); const t=document.getElementById('ep-tpl'); const k=document.getElementById('ep-pub'); if(s) s.value=cfg.serviceId||''; if(t) t.value=cfg.templateId||''; if(k) k.value=cfg.publicKey||''; }
+function notificarEventoAtividade(tipoEvento, projeto, atividade){ if(!projeto || !atividade || typeof emailjs==='undefined') return; const emailsDestino=getProjectEmailList(projeto); if(!emailsDestino.length) return; const cfg=getEffectiveEmailConfig(projeto); if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return; const assunto=`[LION] Atualização no projeto ${projeto.name}`; let mensagem=''; if(tipoEvento==='nova'){ mensagem=`Nova atividade criada no projeto ${projeto.name}
 
-function getEffectiveEmailConfig(p){
-  const globalCfg = getEmailConfig();
-  const localCfg = (p && p.emailjsConfig) ? p.emailjsConfig : {};
-  return {
-    serviceId: globalCfg.serviceId || localCfg.serviceId || '',
-    templateId: globalCfg.templateId || localCfg.templateId || '',
-    publicKey: globalCfg.publicKey || localCfg.publicKey || ''
-  };
-}
+O que: ${atividade.what||'-'}
+Responsável: ${atividade.who||'-'}
+Quando: ${atividade.when||'-'}
+Status: ${atividade.status||0}%`; } else if(tipoEvento==='exclusao'){ mensagem=`Uma atividade foi removida do projeto ${projeto.name}
 
-function salvarConfiguracaoEmailGlobal(){
-  const serviceId = (document.getElementById('ep-svc') || {}).value?.trim() || '';
-  const templateId = (document.getElementById('ep-tpl') || {}).value?.trim() || '';
-  const publicKey = (document.getElementById('ep-pub') || {}).value?.trim() || '';
-  db.emailConfig = { serviceId, templateId, publicKey };
-  saveDB();
-}
+O que: ${atividade.what||'-'}`; } else if(tipoEvento==='status'){ mensagem=`Status atualizado no projeto ${projeto.name}
 
-function carregarConfiguracaoEmailGlobal(){
-  const cfg = getEmailConfig();
-  const s = document.getElementById('ep-svc');
-  const t = document.getElementById('ep-tpl');
-  const k = document.getElementById('ep-pub');
-  if (s) s.value = cfg.serviceId || '';
-  if (t) t.value = cfg.templateId || '';
-  if (k) k.value = cfg.publicKey || '';
-}
-
-function notificarEventoAtividade(tipoEvento, projeto, atividade){
-  if(!projeto || !atividade) return;
-  const emailDestino = projeto.contatoEmail;
-  if(!emailDestino || typeof emailjs === 'undefined') return;
-  const cfg = getEffectiveEmailConfig(projeto);
-  if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-
-  const assunto = `[LION] Atualização no projeto ${projeto.name}`;
-  let mensagem = '';
-  if(tipoEvento === 'nova'){
-    mensagem = `Nova atividade criada no projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}
-Responsável: ${atividade.who || '-'}
-Quando: ${atividade.when || '-'}
-Status: ${atividade.status || 0}%`;
-  } else if(tipoEvento === 'exclusao'){
-    mensagem = `Uma atividade foi removida do projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}`;
-  } else if(tipoEvento === 'status'){
-    mensagem = `Status atualizado no projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}
-Novo status: ${atividade.status || 0}%`;
-  } else {
-    return;
-  }
-
-  emailjs.init(cfg.publicKey);
-  emailjs.send(cfg.serviceId, cfg.templateId, {
-    to_email: emailDestino,
-    project: projeto.name,
-    from_name: session.user?.nome || session.user?.user || 'LION',
-    assunto,
-    mensagem
-  }).catch(err => console.error('Erro email atividade:', err));
-}
-
-function notificarEventoCronograma(tipoEvento, projeto, item, extras = {}) {
-  try {
-    if (!projeto || !item || typeof emailjs === 'undefined') return;
-    const emailDestino = projeto.contatoEmail;
-    if (!emailDestino) return;
-    const cfg = getEffectiveEmailConfig(projeto);
-    if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-
-    let assunto = `[CRONOGRAMA] ${projeto.name}`;
-    let mensagem = '';
-    if (tipoEvento === 'novo_item') {
-      assunto = `[NOVO ITEM NO CRONOGRAMA] ${projeto.name}`;
-      mensagem = `Foi criado um novo item no cronograma.
+O que: ${atividade.what||'-'}
+Novo status: ${atividade.status||0}%`; } else { return; } emailjs.init(cfg.publicKey); emailsDestino.forEach(function(to_email){ emailjs.send(cfg.serviceId,cfg.templateId,{to_email,project:projeto.name,from_name:session.user?.nome||session.user?.user||'LION',assunto,mensagem}).catch(err=>console.error('Erro email atividade:',err));}); }
+function notificarEventoCronograma(tipoEvento, projeto, item, extras={}){ try{ if(!projeto || !item || typeof emailjs==='undefined') return; const emailsDestino=getProjectEmailList(projeto); if(!emailsDestino.length) return; const cfg=getEffectiveEmailConfig(projeto); if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return; let assunto=`[CRONOGRAMA] ${projeto.name}`; let mensagem=''; if(tipoEvento==='novo_item'){ assunto=`[NOVO ITEM NO CRONOGRAMA] ${projeto.name}`; mensagem=`Foi criado um novo item no cronograma.
 
 Projeto: ${projeto.name}
-Descrição: ${item.task || item.desc || item.descricao || '-'}
-Prazo inicial: ${item.start || item.inicio || '-'}
-Prazo final: ${item.end || item.fim || '-'}
-Responsável: ${item.resp || item.owner || item.responsavel || '-'}
-Status: ${item.status || 0}%`;
-    } else if (tipoEvento === 'status_alterado') {
-      assunto = `[STATUS ALTERADO] ${projeto.name}`;
-      mensagem = `O status de um item do cronograma foi alterado.
+Descrição: ${item.task||item.desc||'-'}
+Prazo inicial: ${formatDateBR(item.start||'-')}
+Prazo final: ${formatDateBR(item.end||'-')}
+Responsável: ${item.resp||'-'}
+Status: ${item.status||0}%`; } else if(tipoEvento==='status_alterado'){ assunto=`[STATUS ALTERADO] ${projeto.name}`; mensagem=`O status de um item do cronograma foi alterado.
 
 Projeto: ${projeto.name}
-Descrição: ${item.task || item.desc || item.descricao || '-'}
-Status anterior: ${extras.statusAnterior || '-'}
-Novo status: ${extras.statusNovo || '-'}`;
-    } else if (tipoEvento === 'prazo_alterado') {
-      assunto = `[PRAZO ALTERADO] ${projeto.name}`;
-      mensagem = `O prazo de um item do cronograma foi alterado.
+Descrição: ${item.task||item.desc||'-'}
+Status anterior: ${extras.statusAnterior||'-'}
+Novo status: ${extras.statusNovo||'-'}`; } else if(tipoEvento==='prazo_alterado'){ assunto=`[PRAZO ALTERADO] ${projeto.name}`; mensagem=`O prazo de um item do cronograma foi alterado.
 
 Projeto: ${projeto.name}
-Descrição: ${item.task || item.desc || item.descricao || '-'}
-Prazo anterior: ${extras.prazoAnterior || '-'}
-Novo prazo: ${extras.prazoNovo || '-'}`;
-    } else if (tipoEvento === 'item_excluido') {
-      assunto = `[ITEM EXCLUÍDO] ${projeto.name}`;
-      mensagem = `Um item foi excluído do cronograma.
+Descrição: ${item.task||item.desc||'-'}
+Prazo anterior: ${extras.prazoAnterior||'-'}
+Novo prazo: ${extras.prazoNovo||'-'}`; } else if(tipoEvento==='item_excluido'){ assunto=`[ITEM EXCLUÍDO] ${projeto.name}`; mensagem=`Um item foi excluído do cronograma.
 
 Projeto: ${projeto.name}
-Descrição: ${item.task || item.desc || item.descricao || '-'}
-Responsável: ${item.resp || item.owner || item.responsavel || '-'}`;
-    } else if (tipoEvento === 'concluido') {
-      assunto = `[ITEM CONCLUÍDO] ${projeto.name}`;
-      mensagem = `Um item do cronograma foi concluído.
+Descrição: ${item.task||item.desc||'-'}
+Responsável: ${item.resp||'-'}`; } else if(tipoEvento==='concluido'){ assunto=`[ITEM CONCLUÍDO] ${projeto.name}`; mensagem=`Um item do cronograma foi concluído.
 
 Projeto: ${projeto.name}
-Descrição: ${item.task || item.desc || item.descricao || '-'}
-Responsável: ${item.resp || item.owner || item.responsavel || '-'}
-Status: ${item.status || 0}%`;
-    } else {
-      return;
-    }
-
-    emailjs.init(cfg.publicKey);
-    emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_email: emailDestino,
-      project: projeto.name,
-      from_name: session?.user?.nome || session?.user?.name || session?.user?.user || 'LION',
-      assunto,
-      mensagem
-    }).catch(err => console.error('Erro ao enviar email cronograma:', err));
-  } catch (err) {
-    console.error('Erro em notificarEventoCronograma:', err);
-  }
-}
+Descrição: ${item.task||item.desc||'-'}
+Responsável: ${item.resp||'-'}
+Status: ${item.status||0}%`; } else return; emailjs.init(cfg.publicKey); emailsDestino.forEach(function(to_email){ emailjs.send(cfg.serviceId,cfg.templateId,{to_email,project:projeto.name,from_name:session?.user?.nome||session?.user?.name||session?.user?.user||'LION',assunto,mensagem}).catch(err=>console.error('Erro ao enviar email cronograma:',err));}); }catch(err){ console.error('Erro em notificarEventoCronograma:',err); } }
 </script>
 
 <script>
@@ -2711,255 +2784,7 @@ Status: ${item.status || 0}%`;
     }
   });
   setTimeout(function(){if(ov)ov.style.display='none';},6000);
-})();
-  // ===== CONFIGURAÇÃO GLOBAL DE EMAIL =====
-
-function getEmailConfig(){
-  if(!db.emailConfig){
-    db.emailConfig = {
-      serviceId:'',
-      templateId:'',
-      publicKey:''
-    };
-  }
-  return db.emailConfig;
-}
-
-function salvarConfiguracaoEmailGlobal(){
-  const serviceId = (document.getElementById('ep-service') || {}).value?.trim() || '';
-  const templateId = (document.getElementById('ep-template') || {}).value?.trim() || '';
-  const publicKey = (document.getElementById('ep-public') || {}).value?.trim() || '';
-
-  db.emailConfig = {
-    serviceId,
-    templateId,
-    publicKey
-  };
-
-  saveDB();
-  showToast('Configuração global de email salva!');
-}
-
-function carregarConfiguracaoEmailGlobal(){
-  const cfg = getEmailConfig();
-
-  if(document.getElementById('ep-service')){
-    document.getElementById('ep-service').value = cfg.serviceId || '';
-  }
-
-  if(document.getElementById('ep-template')){
-    document.getElementById('ep-template').value = cfg.templateId || '';
-  }
-
-function salvarConfiguracaoEmailGlobal(){
-  const serviceId = (document.getElementById('ep-svc') || {}).value?.trim() || '';
-  const templateId = (document.getElementById('ep-tpl') || {}).value?.trim() || '';
-  const publicKey = (document.getElementById('ep-pub') || {}).value?.trim() || '';
-
-  db.emailConfig = {
-    serviceId,
-    templateId,
-    publicKey
-  };
-
-  saveDB();
-  showToast('Configuração global de email salva!');
-}
-
-function carregarConfiguracaoEmailGlobal(){
-  const cfg = getEmailConfig();
-
-  if(document.getElementById('ep-svc')){
-    document.getElementById('ep-svc').value = cfg.serviceId || '';
-  }
-
-  if(document.getElementById('ep-tpl')){
-    document.getElementById('ep-tpl').value = cfg.templateId || '';
-  }
-
-  if(document.getElementById('ep-pub')){
-    document.getElementById('ep-pub').value = cfg.publicKey || '';
-  }
-}
-function getEmailConfig(){
-  if(!db.emailConfig){
-    db.emailConfig = {
-      serviceId:'',
-      templateId:'',
-      publicKey:''
-    };
-  }
-  return db.emailConfig;
-}
- function notificarEventoAtividade(tipoEvento, projeto, atividade){
-
-  if(!projeto || !atividade) return;
-
-  const emailDestino = projeto.contatoEmail;
-  if(!emailDestino) return;
-
-  const cfg = db.emailConfig || {};
-  if(!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-
-  const assunto = `[LION] Atualização no projeto ${projeto.name}`;
-
-  let mensagem = '';
-
-  if(tipoEvento === 'nova'){
-    mensagem = `Nova atividade criada no projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}
-Responsável: ${atividade.who || '-'}
-Quando: ${atividade.when || '-'}
-Status: ${atividade.status || 0}%`;
-  }
-
-  if(tipoEvento === 'exclusao'){
-    mensagem = `Uma atividade foi removida do projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}`;
-  }
-
-  if(tipoEvento === 'status'){
-    mensagem = `Status atualizado no projeto ${projeto.name}
-
-O que: ${atividade.what || '-'}
-Novo status: ${atividade.status || 0}%`;
-  }
-
-  emailjs.init(cfg.publicKey);
-
-  emailjs.send(cfg.serviceId, cfg.templateId, {
-    to_email: emailDestino,
-    project: projeto.name,
-    from_name: session.user?.user || "LION",
-    assunto: assunto,
-    mensagem: mensagem
-  })
-  .then(() => console.log("Email enviado"))
-  .catch(err => console.error("Erro email:", err));
-} 
-  
-<function notificarEventoCronograma(tipoEvento, projeto, item, extras = {}) {
-  try {
-    if (!projeto || !item) return;
-
-    const emailDestino = projeto.contatoEmail;
-    if (!emailDestino) return;
-
-    const cfg = db.emailConfig || {};
-    if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return;
-
-    if (typeof emailjs === 'undefined') {
-      console.warn('EmailJS não carregado.');
-      return;
-    }
-
-    let assunto = `[CRONOGRAMA] ${projeto.name}`;
-    let mensagem = '';
-
-    if (tipoEvento === 'novo_item') {
-      assunto = `[NOVO ITEM NO CRONOGRAMA] ${projeto.name}`;
-      mensagem = `Foi criado um novo item no cronograma.
-
-Projeto: ${projeto.name}
-Descrição: ${item.desc || item.descricao || '-'}
-Prazo inicial: ${item.start || item.inicio || '-'}
-Prazo final: ${item.end || item.fim || '-'}
-Responsável: ${item.owner || item.responsavel || '-'}
-Status: ${item.status || '-'}`;
-    }
-
-    if (tipoEvento === 'status_alterado') {
-      assunto = `[STATUS ALTERADO] ${projeto.name}`;
-      mensagem = `O status de um item do cronograma foi alterado.
-
-Projeto: ${projeto.name}
-Descrição: ${item.desc || item.descricao || '-'}
-Status anterior: ${extras.statusAnterior || '-'}
-Novo status: ${extras.statusNovo || '-'}`;
-    }
-
-    if (tipoEvento === 'prazo_alterado') {
-      assunto = `[PRAZO ALTERADO] ${projeto.name}`;
-      mensagem = `O prazo de um item do cronograma foi alterado.
-
-Projeto: ${projeto.name}
-Descrição: ${item.desc || item.descricao || '-'}
-Prazo anterior: ${extras.prazoAnterior || '-'}
-Novo prazo: ${extras.prazoNovo || '-'}`;
-    }
-
-    if (tipoEvento === 'item_excluido') {
-      assunto = `[ITEM EXCLUÍDO] ${projeto.name}`;
-      mensagem = `Um item foi excluído do cronograma.
-
-Projeto: ${projeto.name}
-Descrição: ${item.desc || item.descricao || '-'}
-Responsável: ${item.owner || item.responsavel || '-'}`;
-    }
-
-    if (tipoEvento === 'concluido') {
-      assunto = `[ITEM CONCLUÍDO] ${projeto.name}`;
-      mensagem = `Um item do cronograma foi concluído.
-
-Projeto: ${projeto.name}
-Descrição: ${item.desc || item.descricao || '-'}
-Responsável: ${item.owner || item.responsavel || '-'}
-Status: ${item.status || '-'}`;
-    }
-
-    emailjs.init(cfg.publicKey);
-
-    emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_email: emailDestino,
-      project: projeto.name,
-      from_name: session?.user?.name || session?.user?.user || 'LION',
-      assunto,
-      mensagem
-    })
-    .then(() => console.log('Email enviado com sucesso'))
-    .catch(err => console.error('Erro ao enviar email:', err));
-
-  } catch (err) {
-    console.error('Erro em notificarEventoCronograma:', err);
-  }
-}/script>
-<script>
-function importarExcelCronograma(){
- const input=document.getElementById('excelCron');
- if(!input){return;}
- input.click();
- input.onchange=e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(evt){
-    const data=new Uint8Array(evt.target.result);
-    const wb=XLSX.read(data,{type:'array'});
-    const sheet=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(sheet);
-    if(!session || !session.projId){alert("Abra um projeto primeiro");return;}
-    const proj=db.projects.find(p=>p.id===session.projId);
-    if(!proj.gantt)proj.gantt=[];
-    rows.forEach(r=>{
-      proj.gantt.push({
-        desc:r["Descrição"]||r["Descricao"]||"",
-        week:r["Semana"]||"",
-        start:r["Prazo Inicial"]||"",
-        end:r["Prazo Final"]||"",
-        status:r["Status"]||"0%",
-        owner:r["Responsável"]||"",
-        obs:r["Observação"]||""
-      });
-    });
-    saveDB();
-    renderGantt(proj);
-    alert("Cronograma importado do Excel!");
-  };
-  reader.readAsArrayBuffer(file);
- };
-}
+})()
 </script>
 </body>
 </html>
