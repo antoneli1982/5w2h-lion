@@ -455,11 +455,10 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       if(photos){
         db.users.forEach(function(u){if(photos[u.user])u.photo=photos[u.user];});
       }
-      // Salva cache local (sem dados binários — anexos ficam no IndexedDB)
+      // Salva cache local
       try{
         var cl=JSON.parse(JSON.stringify(db));
         cl.users.forEach(function(u){delete u.photo;});
-        (cl.projects||[]).forEach(function(p){if(p.excelAttachment)delete p.excelAttachment.data;});
         localStorage.setItem(DB_K, JSON.stringify(cl));
       }catch(e){}
     }
@@ -529,8 +528,6 @@ td.td-act{vertical-align:middle;text-align:center;white-space:nowrap;min-width:7
       try{
         var cl = JSON.parse(JSON.stringify(db));
         cl.users.forEach(function(u){delete u.photo;});
-        // Remove dados binários de anexos — ficam só no localStorage
-        (cl.projects||[]).forEach(function(p){if(p.excelAttachment)delete p.excelAttachment.data;});
         var sid = _tabId + '_' + Date.now().toString(36);
         _lastSavedId = sid;
         cl.saveId    = sid;
@@ -975,56 +972,8 @@ let session = {user:null, projId:null, view:'5w2h', dashSc:'op', delProjId:null,
 
 // ══════════════════════════════════════════
 // DB PERSISTENCE
-// ══════════════════════════════════════════
-// ── ATTACHMENTS (armazenados APENAS no localStorage, nunca no Firebase) ──
-// ══════════════════════════════════════════
-// SISTEMA DE ANEXOS — IndexedDB (suporta até 20MB+)
-// ══════════════════════════════════════════
-var _idb=null;
-function _openIDB(cb){
-  if(_idb){cb(_idb);return;}
-  try{
-    var req=indexedDB.open('lion_files',1);
-    req.onupgradeneeded=function(ev){
-      ev.target.result.createObjectStore('attachments',{keyPath:'pid'});
-    };
-    req.onsuccess=function(ev){_idb=ev.target.result;cb(_idb);};
-    req.onerror=function(){cb(null);};
-  }catch(e){cb(null);}
-}
-function setAttachData(pid,data,cb){
-  _openIDB(function(db){
-    if(!db){if(cb)cb(false);return;}
-    try{
-      var tx=db.transaction('attachments','readwrite');
-      tx.objectStore('attachments').put({pid:pid,data:data});
-      tx.oncomplete=function(){if(cb)cb(true);};
-      tx.onerror=function(){if(cb)cb(false);};
-    }catch(e){if(cb)cb(false);}
-  });
-}
-function getAttachData(pid,cb){
-  _openIDB(function(db){
-    if(!db){cb(null);return;}
-    try{
-      var tx=db.transaction('attachments','readonly');
-      var req=tx.objectStore('attachments').get(pid);
-      req.onsuccess=function(){cb(req.result?req.result.data:null);};
-      req.onerror=function(){cb(null);};
-    }catch(e){cb(null);}
-  });
-}
-function clearAttachData(pid,cb){
-  _openIDB(function(db){
-    if(!db){if(cb)cb();return;}
-    try{
-      var tx=db.transaction('attachments','readwrite');
-      tx.objectStore('attachments').delete(pid);
-      tx.oncomplete=function(){if(cb)cb();};
-      tx.onerror=function(){if(cb)cb();};
-    }catch(e){if(cb)cb();}
-  });
-}
+// ── Planilha anexada: armazenada como JSON em p.excelRows (via Firebase/localStorage) ──
+function clearAttachData(pid){} // stub de compatibilidade
 
 
 function saveDB(){
@@ -1033,13 +982,11 @@ function saveDB(){
     const photos={};
     db.users.forEach(u=>{if(u.photo){photos[u.user]=u.photo;}});
     try{localStorage.setItem('lion_photos',JSON.stringify(photos));}catch(e){}
-    // Strip attachment binary data before saving db (fica só no localStorage separado)
     const dbClean=JSON.parse(JSON.stringify(db));
     dbClean.users.forEach(u=>{delete u.photo;});
-    (dbClean.projects||[]).forEach(p=>{if(p.excelAttachment)delete p.excelAttachment.data;});
     localStorage.setItem('lion_db',JSON.stringify(dbClean));
   }catch(e){ console.error('saveDB local error',e); }
-  // Cloud save — always try, independent of local
+  // Cloud save
   try{
     if(window._fbSave){ window._fbSave(); }
   }catch(e){ console.warn('saveDB cloud error',e); }
@@ -1878,181 +1825,99 @@ function openCronExcelImport(pid){
 }
 function handleCronExcelSelected(ev){
   const file=ev.target.files&&ev.target.files[0];
+  ev.target.value=''; // reset para permitir reselecionar o mesmo arquivo
   const pid=Number(ev.target.dataset.pid||session.projId||0);
   if(!file||!pid) return;
-  const MAX=20*1024*1024;
-  if(file.size>MAX){ showToast('❌ Arquivo muito grande! Máximo 20MB.'); return; }
+  if(file.size>25*1024*1024){ showToast('❌ Arquivo muito grande! Máximo 25MB.'); return; }
   const ext=(file.name.split('.').pop()||'').toLowerCase();
-  const isExcel=(ext==='xlsx'||ext==='xls');
-  if(isExcel){
-    importCronFromExcel(pid,file);
+  if(ext==='xlsx'||ext==='xls'||ext==='csv'){
+    importExcelAsTable(pid,file);
   } else {
-    attachCronGenericFile(pid,file);
+    showToast('⚠️ Apenas Excel (.xlsx/.xls) é suportado para consulta.');
   }
 }
-function attachCronGenericFile(pid,file){
-  const p=db.projects.find(x=>x.id===pid); if(!p) return;
-  const MAX=20*1024*1024;
-  if(file.size>MAX){showToast('❌ Arquivo muito grande! Máximo 20MB.');return;}
-  showToast('⏳ Salvando anexo...');
+
+// ── NOVA ABORDAGEM: lê o Excel → converte em JSON → guarda no projeto
+// Não armazena binário. Tudo vira texto, sincroniza via Firebase.
+function importExcelAsTable(pid, file){
+  const p=db.projects.find(x=>x.id===pid);
+  if(!p){ showToast('❌ Projeto não encontrado.'); return; }
+  if(typeof XLSX==='undefined'){ showToast('❌ Biblioteca Excel não carregada. Recarregue a página.'); return; }
+  showToast('⏳ Lendo planilha...');
   const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const tipo=file.type||'application/octet-stream';
-      const isImg=tipo.startsWith('image/');
-      const isPdf=tipo==='application/pdf';
-      // Salva binário no IndexedDB (suporta 20MB+)
-      setAttachData(pid, e.target.result, function(ok){
-        if(!ok){ showToast('❌ Falha ao salvar anexo. Tente um arquivo menor.'); return; }
-        // No db/Firebase guarda apenas metadados (sem binário)
-        p.excelAttachment={
-          name:file.name, tipo:tipo, isGeneric:true,
-          isImg:isImg, isPdf:isPdf,
-          size:file.size,
-          importedAt:new Date().toISOString(), total:0, preview:[]
-        };
-        saveDB();
-        session.view='gantt';
-        renderGantt(p);
-        showToast('✅ "'+file.name+'" anexado!');
-      });
-    }catch(err){ console.error(err); showToast('❌ Erro ao anexar arquivo.'); }
-  };
   reader.onerror=function(){ showToast('❌ Erro ao ler o arquivo.'); };
-  reader.readAsDataURL(file);
-}
-function normalizeImportedStatus(value){
-  const raw=String(value||'').trim().toLowerCase();
-  if(raw===''||raw==='nan') return 0;
-  const num=parseInt(raw.replace('%',''),10);
-  if(!isNaN(num)){
-    if(num>=100) return 100;
-    if(num>=75) return 75;
-    if(num>=50) return 50;
-    if(num>=25) return 25;
-    return 0;
-  }
-  if(raw.includes('concl')) return 100;
-  if(raw.includes('avanç')) return 75;
-  if(raw.includes('andam')) return 50;
-  if(raw.includes('inic')) return 25;
-  return 0;
-}
-function importCronFromExcel(pid,file){
-  const p=db.projects.find(x=>x.id===pid); if(!p) return;
-  const MAX=20*1024*1024;
-  if(file.size>MAX){showToast('❌ Arquivo muito grande! Máximo 20MB.');return;}
-  if(typeof XLSX==='undefined'){ showToast('Biblioteca de Excel não carregada.'); return; }
-  showToast('⏳ Lendo Excel...');
-  const reader=new FileReader();
   reader.onload=function(e){
     try{
       const wb=XLSX.read(e.target.result,{type:'array'});
-      const novos=[];
+      const SKIP=['GRÁFICOS','GRAFICOS','RESUMO','CHARTS','GRÁFICOS'];
+      const allRows=[];
+      const sheetsSeen=[];
 
-      // Mapeamentos de nomes de colunas aceitos
-      const COL_TASK =['ATIVIDADE','TAREFA','DESCRIÇÃO','DESCRICAO','DESCRIPTION','TASK','Atividade','Tarefa','Descrição','Descricao','Task'];
-      const COL_PROJ =['PROJETO','PROJECT','Projeto','Project'];
-      const COL_RESP =['RESPONSÁVEL','RESPONSAVEL','OWNER','RESP','Responsável','Responsavel','Owner','Resp'];
-      const COL_START=['INÍCIO DO PLANO','INICIO DO PLANO','PRAZO INICIAL','INICIO','INÍCIO','START','Início do Plano','Inicio do Plano','Prazo Inicial','Início','Inicio','Start'];
-      const COL_DUR  =['DURAÇÃO DO PLANO','DURACAO DO PLANO','DURAÇÃO','DURACAO','DURATION','Duração do Plano','Duracao do Plano','Duração','Duracao','Duration'];
-      const COL_END  =['PRAZO FINAL','FIM','END','Prazo Final','Fim','End'];
-      const COL_STAT =['PORCENTAGEM CONCLUÍDA','PORCENTAGEM CONCLUIDA','% CONCLUÍDA','% CONCLUIDA','STATUS','PROGRESSO','Porcentagem Concluída','Porcentagem Concluida','Status','Progresso'];
-      const COL_OBS  =['OBSERVAÇÃO','OBSERVACAO','OBS','Observação','Observacao','Obs'];
+      wb.SheetNames.forEach(function(sn){
+        if(SKIP.some(s=>sn.toUpperCase()===s.toUpperCase())) return;
+        const sheet=wb.Sheets[sn];
+        const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
 
-      function findCol(headers,candidates){
-        for(const c of candidates){ const i=headers.indexOf(c); if(i>=0) return i; }
-        return -1;
-      }
-      function parseSheetRaw(sheetName){
-        const sheet=wb.Sheets[sheetName];
-        const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:null});
+        // Encontra linha de cabeçalho (contem ATIVIDADE, PROJETO, ÁREA, TAREFA etc.)
         let headerIdx=-1;
         for(let i=0;i<Math.min(aoa.length,10);i++){
-          const row=aoa[i];
-          if(!row) continue;
-          const rowStr=row.map(c=>String(c||'')).join('|').toUpperCase();
-          if(rowStr.includes('ATIVIDADE')||rowStr.includes('DESCRI')||rowStr.includes('TASK')){
+          const rowStr=(aoa[i]||[]).map(function(c){return String(c||'');}).join('|').toUpperCase();
+          if(rowStr.includes('ATIVIDADE')||rowStr.includes('TAREFA')||rowStr.includes('TASK')||
+             (rowStr.includes('ÁREA')&&rowStr.includes('STATUS'))||rowStr.includes('DESCRI')){
             headerIdx=i; break;
           }
         }
         if(headerIdx<0) return;
-        const headers=aoa[headerIdx].map(c=>String(c||'').trim());
-        const iTask=findCol(headers,COL_TASK);
-        const iProj=findCol(headers,COL_PROJ);
-        const iResp=findCol(headers,COL_RESP);
-        const iStart=findCol(headers,COL_START);
-        const iDur=findCol(headers,COL_DUR);
-        const iEnd=findCol(headers,COL_END);
-        const iStat=findCol(headers,COL_STAT);
-        const iObs=findCol(headers,COL_OBS);
-        if(iTask<0) return;
+
+        const rawHeaders=(aoa[headerIdx]||[]).map(function(c){return String(c||'').trim();});
+        // Remove colunas vazias do final
+        const headers=rawHeaders.slice(0,rawHeaders.reduce(function(last,h,i){return h?i+1:last;},0));
+        if(headers.length<2) return;
+
+        let sheetRows=0;
         for(let i=headerIdx+1;i<aoa.length;i++){
-          const row=aoa[i];
-          if(!row) continue;
-          const task=String(row[iTask]||'').trim();
-          if(!task||task==='null') continue;
-          const proj=iProj>=0?String(row[iProj]||'').trim():'';
-          const resp=iResp>=0?String(row[iResp]||'').trim():'';
-          const dur=iDur>=0?(row[iDur]!=null?String(row[iDur]):''):'';
-          const obs=iObs>=0?String(row[iObs]||'').trim():'';
-          const statRaw=iStat>=0?(row[iStat]!=null?row[iStat]:''):'';
-          let statusNum=0;
-          if(statRaw!==''){
-            const n=parseFloat(String(statRaw).replace('%',''));
-            if(!isNaN(n)){
-              const pct=n<=1?Math.round(n*100):Math.round(n);
-              if(pct>=100) statusNum=100;
-              else if(pct>=75) statusNum=75;
-              else if(pct>=50) statusNum=50;
-              else if(pct>=25) statusNum=25;
+          const row=aoa[i]||[];
+          // Pula linhas completamente vazias
+          if(!row.slice(0,headers.length).some(function(v){return String(v||'').trim()!=='';})) continue;
+
+          const obj={_aba:sn};
+          headers.forEach(function(h,j){
+            if(!h) return;
+            let v=String(row[j]||'').trim();
+            // Normaliza percentual: 0.25 → "25%"
+            if(v!==''&&!isNaN(Number(v))&&Number(v)<=1&&
+               (h.toUpperCase().includes('%')||h.toUpperCase().includes('PORCENTAGEM')||h.toUpperCase().includes('STATUS'))){
+              v=Math.round(Number(v)*100)+'%';
             }
-          }
-          const week=iStart>=0&&!isNaN(Number(row[iStart]))?'Sem. '+row[iStart]:'';
-          const desc=proj?(proj===task?task:proj+' — '+task):task;
-          novos.push({
-            id:db.nextGanttId++, task:desc, week:week, start:'', end:'',
-            resp:resp, obs:obs||(dur?'Duração: '+dur:''), status:statusNum,
-            color:GANTT_COLORS[(p.gantt.length+novos.length)%GANTT_COLORS.length], sheet:sheetName
+            obj[h]=v;
           });
+          allRows.push(obj);
+          sheetRows++;
         }
+        if(sheetRows>0) sheetsSeen.push(sn);
+      });
+
+      if(allRows.length===0){
+        showToast('⚠️ Nenhum dado encontrado. Verifique o formato do arquivo.');
+        return;
       }
 
-      const SKIP=['GRÁFICOS','GRAFICOS','RESUMO','RESUMO POR SETOR','CHARTS','GRÁFICOS'];
-      wb.SheetNames.forEach(function(sn){
-        if(SKIP.some(s=>sn.toUpperCase()===s.toUpperCase())) return;
-        parseSheetRaw(sn);
-      });
-
-      // Salva o arquivo no IndexedDB independente do resultado
-      const rawData=e.target.result; // ArrayBuffer
-      // Converte para base64 para guardar no IndexedDB
-      const uint8=new Uint8Array(rawData);
-      let bin=''; uint8.forEach(function(b){bin+=String.fromCharCode(b);});
-      const b64='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+btoa(bin);
-
-      setAttachData(pid, b64, function(ok){
-        if(!ok) console.warn('Falha ao salvar no IndexedDB');
-        if(!novos.length){
-          p.excelAttachment={
-            name:file.name, tipo:file.type||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            isGeneric:true, isImg:false, isPdf:false,
-            size:file.size, importedAt:new Date().toISOString(), total:0, preview:[]
-          };
-          saveDB(); session.view='gantt'; renderGantt(p);
-          showToast('📎 "'+file.name+'" anexado (formato livre).');
-          return;
-        }
-        p.gantt=p.gantt||[];
-        novos.forEach(n=>p.gantt.push(n));
-        p.excelAttachment={
-          name:file.name, importedAt:new Date().toISOString(),
-          size:file.size, total:novos.length, preview:[], isExcelImported:true
-        };
-        saveDB(); session.view='gantt'; renderGantt(p);
-        showToast('✅ '+novos.length+' atividades importadas!');
-      });
-    }catch(err){ console.error(err); showToast('❌ Erro ao ler Excel: '+err.message); }
+      // Guarda linhas JSON no projeto — sem binário
+      p.excelRows=allRows;
+      p.excelAttachment={
+        name:file.name,
+        importedAt:new Date().toISOString(),
+        total:allRows.length,
+        sheets:sheetsSeen
+      };
+      saveDB();
+      session.view='gantt';
+      renderGantt(p);
+      showToast('✅ '+allRows.length+' linhas importadas de "'+file.name+'"!');
+    }catch(err){
+      console.error('importExcelAsTable error:', err);
+      showToast('❌ Erro ao ler Excel: '+err.message);
+    }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -2071,32 +1936,110 @@ function getDocIcon(nome,tipo){
   if(ext==='zip'||ext==='rar'||ext==='7z') return '🗜️';
   return '📎';
 }
-function abrirAnexoIDB(pid, nome, tipo){
-  getAttachData(pid, function(data){
-    if(!data){ showToast('❌ Arquivo não encontrado neste dispositivo.'); return; }
-    abrirAnexo(data, nome, tipo);
-  });
-}
 function renderExcelAttachmentPanel(p){
   const a=p.excelAttachment;
-  if(!a) return '';
-  const ico=getDocIcon(a.name,a.tipo||'');
-  const sz=a.size?(a.size>1048576?(a.size/1048576).toFixed(1)+'MB':(a.size/1024).toFixed(0)+'KB'):'';
-  const removeBtn=`<button onclick="(function(){const pp=db.projects.find(x=>x.id===${p.id});if(pp){clearAttachData(${p.id});delete pp.excelAttachment;saveDB();renderGantt(pp);}})()" style="background:transparent;border:1px solid #ef444433;color:#fca5a5;border-radius:8px;padding:5px 11px;font-size:10px;font-weight:700;font-family:Montserrat,sans-serif;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='#ef444433'">🗑 Remover</button>`;
-  const openBtn=`<button onclick="abrirAnexoIDB(${p.id},'${escapeHtml(a.name||'')}','${escapeHtml(a.tipo||'')}')" style="background:#0f2e14;border:1px solid #4ade8044;color:#86efac;border-radius:8px;padding:5px 13px;font-size:11px;font-weight:700;font-family:Montserrat,sans-serif;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#4ade80'" onmouseout="this.style.borderColor='#4ade8044'">🔗 Abrir / Baixar</button>`;
-  const label=a.isExcelImported
-    ?`📊 ${escapeHtml(a.name||'')}${sz?' · '+sz:''} · ${a.total||0} atividades importadas`
-    :`${ico} ${escapeHtml(a.name||'')}${sz?' · '+sz:''}`;
-  return `<div style="background:linear-gradient(180deg,#0d1a0e 0%,#091209 100%);border:2px solid #4ade8040;border-radius:14px;padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 0 18px #4ade8010">
-    <div style="display:flex;align-items:center;gap:8px;min-width:0">
-      <span style="display:inline-block;width:4px;height:36px;background:#4ade80;border-radius:3px;flex-shrink:0"></span>
-      <div style="min-width:0">
-        <div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:900;color:#4ade80;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ico} DOCUMENTO ANEXADO</div>
-        <div style="font-size:11px;color:#86efac;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</div>
-        <div style="font-size:10px;color:#4ade8077;margin-top:2px">💾 Salvo neste dispositivo · IndexedDB</div>
+  const rows=p.excelRows||[];
+  if(!a&&!rows.length) return '';
+
+  // Coleta todas as colunas únicas das linhas (exceto _aba)
+  const allCols=[];
+  rows.forEach(function(r){
+    Object.keys(r).forEach(function(k){
+      if(k!=='_aba'&&!allCols.includes(k)) allCols.push(k);
+    });
+  });
+
+  // Abas disponíveis
+  const abas=[...new Set(rows.map(function(r){return r._aba||'';}).filter(Boolean))];
+  const panelId='xl-panel-'+p.id;
+  const searchId='xl-search-'+p.id;
+  const abaId='xl-aba-'+p.id;
+
+  // Monta linhas da tabela (todas — filtro é feito no cliente com JS inline)
+  const tableRows=rows.map(function(r,i){
+    const cells=allCols.map(function(col){
+      const v=escapeHtml(String(r[col]||''));
+      // Colore % de progresso
+      if(v.match(/^\d+%$/)){
+        const n=parseInt(v);
+        const bg=n>=100?'#14532d':n>=50?'#1e3a5f':n>0?'#2d2209':'#1a1a1a';
+        const fg=n>=100?'#4ade80':n>=50?'#38bdf8':n>0?'#fbbf24':'#7fa8b8';
+        return `<td style="padding:7px 10px;font-size:11px;border-bottom:1px solid #4ade8010;text-align:center"><span style="background:${bg};color:${fg};border-radius:99px;padding:2px 9px;font-weight:700;font-family:Montserrat,sans-serif;font-size:10px">${v}</span></td>`;
+      }
+      return `<td style="padding:7px 10px;font-size:11px;color:#c8dde5;border-bottom:1px solid #4ade8010;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v}">${v}</td>`;
+    }).join('');
+    return `<tr data-aba="${escapeHtml(r._aba||'')}" style="background:${i%2===0?'#0a180b':'#0c1e0d'}">${cells}</tr>`;
+  }).join('');
+
+  const colHeaders=allCols.map(function(col){
+    return `<th style="padding:9px 10px;color:#4ade80;font-family:Montserrat,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-right:1px solid #4ade8018;white-space:nowrap">${escapeHtml(col)}</th>`;
+  }).join('');
+
+  const abaOptions=abas.map(function(ab){
+    return `<option value="${escapeHtml(ab)}">${escapeHtml(ab)}</option>`;
+  }).join('');
+
+  const removeBtn=`<button onclick="(function(){const pp=db.projects.find(x=>x.id===${p.id});if(pp&&confirm('Remover planilha anexada?')){delete pp.excelAttachment;delete pp.excelRows;saveDB();renderGantt(pp);}})()" style="background:transparent;border:1px solid #ef444433;color:#fca5a5;border-radius:8px;padding:5px 12px;font-size:10px;font-weight:700;font-family:Montserrat,sans-serif;cursor:pointer" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='#ef444433'">🗑 Remover</button>`;
+
+  const filterScript=`
+    (function(){
+      var sp=document.getElementById('${searchId}');
+      var ab=document.getElementById('${abaId}');
+      var tbl=document.getElementById('${panelId}');
+      if(!sp||!tbl) return;
+      function doFilter(){
+        var q=(sp.value||'').toLowerCase();
+        var abaV=(ab?ab.value:'');
+        var trs=tbl.querySelectorAll('tr[data-aba]');
+        trs.forEach(function(tr){
+          var abaMatch=!abaV||tr.getAttribute('data-aba')===abaV;
+          var textMatch=!q||tr.innerText.toLowerCase().includes(q);
+          tr.style.display=(abaMatch&&textMatch)?'':'none';
+        });
+      }
+      if(sp) sp.addEventListener('input',doFilter);
+      if(ab) ab.addEventListener('change',doFilter);
+    })();
+  `;
+
+  const importedAt=a&&a.importedAt?new Date(a.importedAt).toLocaleDateString('pt-BR'):'';
+
+  return `<div style="background:linear-gradient(180deg,#0d1a0e 0%,#091209 100%);border:2px solid #4ade8040;border-radius:14px;padding:14px 16px;margin-bottom:14px;box-shadow:0 0 18px #4ade8010">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-block;width:4px;height:40px;background:#4ade80;border-radius:3px;flex-shrink:0"></span>
+        <div>
+          <div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:900;color:#4ade80;letter-spacing:.3px">📊 PLANILHA PARA CONSULTA</div>
+          <div style="font-size:11px;color:#86efac;margin-top:2px">${escapeHtml((a&&a.name)||'')} · ${rows.length} linhas · ${abas.length} aba${abas.length!==1?'s':''}</div>
+          ${importedAt?`<div style="font-size:10px;color:#4ade8077;margin-top:1px">Importado em ${importedAt}</div>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${abaOptions?`<select id="${abaId}" style="background:#0f2e14;border:1px solid #4ade8033;color:#86efac;border-radius:8px;padding:5px 10px;font-size:11px;font-family:Montserrat,sans-serif;cursor:pointer"><option value="">Todas as abas</option>${abaOptions}</select>`:''}
+        <input id="${searchId}" type="text" placeholder="🔍 Buscar..." style="background:#0a180b;border:1px solid #4ade8033;color:#c8dde5;border-radius:8px;padding:5px 12px;font-size:11px;font-family:Montserrat,sans-serif;outline:none;min-width:160px">
+        ${removeBtn}
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${openBtn}${removeBtn}</div>
+    <div style="overflow:auto;border:1px solid #4ade8018;border-radius:10px;max-height:380px">
+      <table id="${panelId}" style="width:100%;border-collapse:collapse;min-width:600px">
+        <thead><tr style="background:#0f2e14;position:sticky;top:0">${colHeaders}<th style="padding:9px 10px;color:#4ade8077;font-size:10px;font-weight:700;font-family:Montserrat,sans-serif;text-transform:uppercase;white-space:nowrap">Aba</th></tr></thead>
+        <tbody>${rows.map(function(r,i){
+          const cells=allCols.map(function(col){
+            const v=escapeHtml(String(r[col]||''));
+            if(v.match(/^\d+%$/)){
+              const n=parseInt(v);
+              const bg=n>=100?'#14532d':n>=50?'#1e3a5f':n>0?'#2d2209':'#1a1a1a';
+              const fg=n>=100?'#4ade80':n>=50?'#38bdf8':n>0?'#fbbf24':'#7fa8b8';
+              return '<td style="padding:7px 10px;font-size:11px;border-bottom:1px solid #4ade8010;text-align:center"><span style="background:'+bg+';color:'+fg+';border-radius:99px;padding:2px 9px;font-weight:700;font-family:Montserrat,sans-serif;font-size:10px">'+v+'</span></td>';
+            }
+            return '<td style="padding:7px 10px;font-size:11px;color:#c8dde5;border-bottom:1px solid #4ade8010;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+v+'">'+v+'</td>';
+          }).join('');
+          const abaCell='<td style="padding:7px 10px;font-size:10px;color:#4ade8077;border-bottom:1px solid #4ade8010;white-space:nowrap">'+escapeHtml(r._aba||'')+'</td>';
+          return '<tr data-aba="'+escapeHtml(r._aba||'')+'" style="background:'+(i%2===0?'#0a180b':'#0c1e0d')+'">'+cells+abaCell+'</tr>';
+        }).join('')}</tbody>
+      </table>
+    </div>
+    <script>${filterScript}<\/script>
   </div>`;
 }
 
@@ -2121,7 +2064,7 @@ function renderGantt(p){
         <button class="view-tab cron active" onclick="openProject(${p.id},'gantt')">📅 Cronograma</button>
       </div>
     </div>
-    <input type="file" id="cron-excel-input" accept="*/*" style="display:none" onchange="handleCronExcelSelected(event)">
+    <input type="file" id="cron-excel-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleCronExcelSelected(event)">
 
     <!-- ══ 5W2H SECUNDÁRIO EM DESTAQUE ══ -->
     <div style="background:linear-gradient(135deg,#1a1200 0%,#0f0d00 100%);border:2px solid #f5a80040;border-radius:18px;padding:18px 20px;margin-bottom:18px;box-shadow:0 0 32px #f5a80018,0 8px 28px #00000060;position:relative;overflow:hidden">
@@ -2175,7 +2118,7 @@ function renderGantt(p){
         </div>
         <div class="cron-actions">
 
-          <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="openCronExcelImport(${p.id})">📎 Anexar Documento</button>
+          <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="openCronExcelImport(${p.id})">📊 Importar Planilha</button>
           <button class="btn-secondary" style="font-size:11px;padding:8px 14px" onclick="window.open('modelo-cronograma.xlsx','_blank')">📄 Modelo Excel</button>
         </div>
       </div>
